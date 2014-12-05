@@ -1,4 +1,4 @@
-(ns cryogen.github
+(ns cryogen-core.github
   (:require [cheshire.core :as json])
   (:import (org.apache.commons.codec.binary Base64 StringUtils)))
 

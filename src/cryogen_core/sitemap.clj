@@ -1,6 +1,6 @@
-(ns cryogen.sitemap
+(ns cryogen-core.sitemap
   (:require [clojure.xml :refer [emit]]
-            [cryogen.io :refer [get-resource find-assets]])
+            [cryogen-core.io :refer [get-resource find-assets]])
   (:import java.util.Date))
 
 ;;generate sitemaps using the sitemap spec

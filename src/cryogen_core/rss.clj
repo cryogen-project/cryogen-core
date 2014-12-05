@@ -1,4 +1,4 @@
-(ns cryogen.rss
+(ns cryogen-core.rss
   (:require [clj-rss.core :as rss]
             [clojure.xml :refer [emit]])
   (:import java.util.Date))

@@ -1,4 +1,4 @@
-(ns cryogen.sass
+(ns cryogen-core.sass
   (:require [clojure.java.shell :refer [sh]]
             [clojure.java.io :as io]))
 

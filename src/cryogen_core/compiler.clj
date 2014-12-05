@@ -1,16 +1,16 @@
-(ns cryogen.compiler
+(ns cryogen-core.compiler
   (:require [selmer.parser :refer [cache-off! render-file]]
-            [cryogen.io :refer
+            [cryogen-core.io :refer
              [get-resource find-assets create-folder wipe-public-folder copy-resources]]
-            [cryogen.sitemap :as sitemap]
-            [cryogen.rss :as rss]
+            [cryogen-core.sitemap :as sitemap]
+            [cryogen-core.rss :as rss]
             [io.aviso.exception :refer [write-exception]]
             [clojure.java.io :refer [copy file reader writer]]
             [clojure.string :as s]
             [text-decoration.core :refer :all]
             [markdown.core :refer [md-to-html-string]]
-            [cryogen.toc :refer [generate-toc]]
-            [cryogen.sass :as sass]))
+            [cryogen-core.toc :refer [generate-toc]]
+            [cryogen-core.sass :as sass]))
 
 (cache-off!)
 

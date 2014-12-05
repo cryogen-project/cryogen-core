@@ -1,4 +1,4 @@
-(ns cryogen.watcher
+(ns cryogen-core.watcher
   (:require [clojure.java.io :refer [file]]))
 
 (defn get-assets [root]

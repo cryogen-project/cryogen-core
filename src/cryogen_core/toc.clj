@@ -1,4 +1,4 @@
-(ns cryogen.toc
+(ns cryogen-core.toc
  (:require [crouton.html :as html]
            [hiccup.core :as hiccup]))
 

@@ -1,4 +1,4 @@
-(ns cryogen.io
+(ns cryogen-core.io
   (:require [clojure.java.io :refer [file]]
             [me.raynes.fs :as fs]))
 
