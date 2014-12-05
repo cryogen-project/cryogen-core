@@ -9,55 +9,85 @@
             [clojure.string :as s]
             [text-decoration.core :refer :all]
             [markdown.core :refer [md-to-html-string]]
+            [markdown.transformers :refer [transformer-vector]]
             [cryogen-core.toc :refer [generate-toc]]
             [cryogen-core.sass :as sass]))
 
 (cache-off!)
 
-(defn root-path [config k]
+(def public "resources/public")
+
+(defn root-path
+  "Creates the root path for posts, tags and pages"
+  [config k]
   (if-let [root (k config)]
     (str "/" root "/") "/"))
 
-(def public "resources/public")
-
-(defn find-md-assets []
+(defn find-md-assets
+  "Returns a list of files ending with .md under templates"
+  []
   (find-assets "templates" ".md"))
 
-(defn find-posts [{:keys [post-root]}]
+(defn find-posts
+  "Returns a list of markdown files representing posts under the post root in templates/md"
+  [{:keys [post-root]}]
   (find-assets (str "templates/md" post-root) ".md"))
 
-(defn find-pages [{:keys [page-root]}]
+(defn find-pages
+  "Returns a list of markdown files representing pages under the page root in templates/md"
+  [{:keys [page-root]}]
   (find-assets (str "templates/md" page-root) ".md"))
 
-(defn parse-post-date [file-name date-fmt]
+(defn parse-post-date
+  "Parses the post date from the post's file name and returns the corresponding java date object"
+  [file-name date-fmt]
   (let [fmt (java.text.SimpleDateFormat. date-fmt)]
     (.parse fmt (.substring file-name 0 10))))
 
-(defn post-uri [file-name {:keys [blog-prefix post-root]}]
+(defn post-uri
+  "Creates a post uri from the post file name"
+  [file-name {:keys [blog-prefix post-root]}]
   (str blog-prefix post-root (s/replace file-name #".md" ".html")))
 
-(defn page-uri [page-name {:keys [blog-prefix page-root]}]
+(defn page-uri
+  "Creates a page uri from the page file name"
+  [page-name {:keys [blog-prefix page-root]}]
   (str blog-prefix page-root (s/replace page-name #".md" ".html")))
 
-(defn read-page-meta [page rdr]
+(defn read-page-meta
+  "Returns the clojure map from the top of a markdown page/post"
+  [page rdr]
   (try
     (read rdr)
     (catch Exception _
       (throw (IllegalArgumentException. (str "Malformed metadata on page: " page))))))
 
-(defn parse-content [rdr]
+(defn rewrite-hrefs
+  "Injects the blog prefix in front of any local links
+
+  ex. <img src='/img/cryogen.png'/> becomes <img src='/blog/img/cryogen.png'/>"
+  [{:keys [blog-prefix]} text state]
+  [(clojure.string/replace text #"href=.?/|src=.?/" #(str (subs % 0 (dec (count %))) blog-prefix "/"))
+   state])
+
+(defn parse-content
+  "Parses the markdown content in a post/page into html"
+  [rdr config]
   (md-to-html-string
     (->> (java.io.BufferedReader. rdr)
          (line-seq)
          (s/join "\n"))
-    :heading-anchors true))
+    :heading-anchors true
+    :replacement-transformers (conj transformer-vector (partial rewrite-hrefs config))))
 
-(defn parse-page [is-post? page config]
+(defn parse-page
+  "Parses a page/post and returns a map of the content, uri, date etc."
+  [is-post? page config]
   (with-open [rdr (java.io.PushbackReader. (reader page))]
     (let [page-name (.getName page)
           file-name (s/replace page-name #".md" ".html")
           page-meta (read-page-meta page-name rdr)
-          content (parse-content rdr)]
+          content (parse-content rdr config)]
       (merge
         (update-in page-meta [:layout] #(str (name %) ".html"))
         {:file-name file-name
@@ -75,26 +105,38 @@
           {:uri        (page-uri file-name config)
            :page-index (:page-index page-meta)})))))
 
-(defn read-posts [config]
+(defn read-posts
+  "Returns a sequence of maps representing the data from markdown files of posts.
+   Sorts the sequence by post date."
+  [config]
   (->> (find-posts config)
        (map #(parse-page true % config))
        (sort-by :date)
        reverse))
 
-(defn read-pages [config]
+(defn read-pages
+  "Returns a sequence of maps representing the data from markdown files of pages.
+   Sorts the sequence by post date."
+  [config]
   (->> (find-pages config)
        (map #(parse-page false % config))
        (sort-by :page-index)))
 
-(defn tag-post [tags post]
+(defn tag-post
+  "Adds the uri and title of a post to the list of posts under each of its tags"
+  [tags post]
   (reduce (fn [tags tag]
             (update-in tags [tag] (fnil conj []) (select-keys post [:uri :title])))
           tags (:tags post)))
 
-(defn group-by-tags [posts]
+(defn group-by-tags
+  "Maps all the tags with a list of posts that contain each tag"
+  [posts]
   (reduce tag-post {} posts))
 
-(defn group-for-archive [posts]
+(defn group-for-archive
+  "Groups the posts by month and year for archive sorting"
+  [posts]
   (->> posts
        (map #(select-keys % [:title :uri :date :formatted-archive-group :parsed-archive-group]))
        (group-by :formatted-archive-group)
@@ -105,23 +147,32 @@
        (sort-by :parsed-group)
        reverse))
 
-(defn tag-info [{:keys [blog-prefix tag-root]} tag]
+(defn tag-info
+  "Returns a map containing the name and uri of the specified tag"
+  [{:keys [blog-prefix tag-root]} tag]
   {:name (name tag)
    :uri  (str blog-prefix tag-root (name tag) ".html")})
 
-(defn add-prev-next [pages]
+(defn add-prev-next
+  "Adds a :prev and :next key to the page/post data containing the title and uri of the prev/next
+  post/page if it exists"
+  [pages]
   (map (fn [[prev target next]]
          (assoc target
                 :prev (if prev (select-keys prev [:title :uri]) nil)
                 :next (if next (select-keys next [:title :uri]) nil)))
        (partition 3 1 (flatten [nil pages nil]))))
 
-(defn group-pages [pages]
+(defn group-pages
+  "Separates the pages into links for the navbar and links for the sidebar"
+  [pages]
   (let [{navbar-pages  true
          sidebar-pages false} (group-by #(boolean (:navbar? %)) pages)]
     (map (partial sort-by :page-index) [navbar-pages sidebar-pages])))
 
-(defn compile-pages [default-params pages {:keys [blog-prefix page-root]}]
+(defn compile-pages
+  "Compiles all the pages into html and spits them out into the public folder"
+  [default-params pages {:keys [blog-prefix page-root asset-url]}]
   (when-not (empty? pages)
     (println (blue "compiling pages"))
     (create-folder (str blog-prefix page-root))
@@ -131,9 +182,12 @@
             (render-file "templates/html/layouts/page.html"
                          (merge default-params
                                 {:servlet-context "../"
-                                 :page            page}))))))
+                                 :page            page
+                                 :asset-url       asset-url}))))))
 
-(defn compile-posts [default-params posts {:keys [blog-prefix post-root disqus-shortname]}]
+(defn compile-posts
+  "Compiles all the posts into html and spits them out into the public folder"
+  [default-params posts {:keys [blog-prefix post-root disqus-shortname asset-url]}]
   (when-not (empty? posts)
     (println (blue "compiling posts"))
     (create-folder (str blog-prefix post-root))
@@ -144,9 +198,12 @@
                          (merge default-params
                                 {:servlet-context  "../"
                                  :post             post
-                                 :disqus-shortname disqus-shortname}))))))
+                                 :disqus-shortname disqus-shortname
+                                 :asset-url        asset-url}))))))
 
-(defn compile-tags [default-params posts-by-tag {:keys [blog-prefix tag-root] :as config}]
+(defn compile-tags
+  "Compiles all the tag pages into html and spits them out into the public folder"
+  [default-params posts-by-tag {:keys [blog-prefix tag-root] :as config}]
   (when-not (empty? posts-by-tag)
     (println (blue "compiling tags"))
     (create-folder (str blog-prefix tag-root))
@@ -159,27 +216,36 @@
                                                   :name            name
                                                   :posts           posts})))))))
 
-(defn compile-index [default-params {:keys [blog-prefix disqus?]}]
+(defn compile-index
+  "Compiles the index page into html and spits it out into the public folder"
+  [default-params {:keys [blog-prefix disqus? asset-url]}]
   (println (blue "compiling index"))
   (spit (str public blog-prefix "/index.html")
         (render-file "templates/html/layouts/home.html"
                      (merge default-params
-                            {:home true
-                             :disqus?         disqus?
-                             :post            (get-in default-params [:latest-posts 0])}))))
+                            {:home      true
+                             :disqus?   disqus?
+                             :post      (get-in default-params [:latest-posts 0])
+                             :asset-url asset-url}))))
 
-(defn compile-archives [default-params posts {:keys [blog-prefix]}]
+(defn compile-archives
+  "Compiles the archives page into html and spits it out into the public folder"
+  [default-params posts {:keys [blog-prefix]}]
   (println (blue "compiling archives"))
   (spit (str public blog-prefix "/archives.html")
         (render-file "templates/html/layouts/archives.html"
                      (merge default-params
                             {:archives true
-                             :groups          (group-for-archive posts)}))))
+                             :groups   (group-for-archive posts)}))))
 
-(defn tag-posts [posts config]
+(defn tag-posts
+  "Converts the tags in each post into links"
+  [posts config]
   (map #(update-in % [:tags] (partial map (partial tag-info config))) posts))
 
-(defn read-config []
+(defn read-config
+  "Reads the config file"
+  []
   (let [config (-> "templates/config.edn"
                    get-resource
                    slurp
@@ -189,14 +255,20 @@
                    (update-in [:sass-src] (fnil str "css"))
                    (update-in [:sass-dest] (fnil str "css"))
                    (update-in [:post-date-format] (fnil str "yyyy-MM-dd"))
-                   (update-in [:keep-files] (fnil seq [])))]
+                   (update-in [:keep-files] (fnil seq [])))
+        site-url (:site-url config)
+        blog-prefix (:blog-prefix config)]
     (merge
       config
       {:page-root (root-path :page-root config)
        :post-root (root-path :post-root config)
-       :tag-root  (root-path :tag-root config)})))
+       :tag-root  (root-path :tag-root config)
+       :asset-root (str (if (.endsWith site-url "/") (apply str (butlast site-url)) site-url)
+                       blog-prefix)})))
 
-(defn compile-assets []
+(defn compile-assets
+  "Generates all the html and copies over resources specified in the config"
+  []
   (println (green "compiling assets..."))
   (let [{:keys [site-url blog-prefix rss-name recent-posts sass-src sass-dest keep-files] :as config} (read-config)
         posts (add-prev-next (read-posts config))
