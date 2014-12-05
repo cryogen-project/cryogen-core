@@ -1,6 +1,7 @@
 (ns cryogen-core.io
   (:require [clojure.java.io :refer [file]]
-            [me.raynes.fs :as fs]))
+            [me.raynes.fs :as fs]
+            [clojure.java.io :as io]))
 
 (def public "resources/public")
 
@@ -25,6 +26,11 @@
   (let [filenamefilter (reify java.io.FilenameFilter (accept [this _ filename] (not (some #{filename} keep-files))))]
     (doseq [path (.listFiles (file public) filenamefilter)]
       (fs/delete-dir path))))
+
+(defn copy-images-from-markdown-folders [{:keys [blog-prefix]}]
+  (let [blog-prefix-relative (if (= \/ (first blog-prefix)) (subs blog-prefix 1) blog-prefix)]
+    (doseq [asset (fs/find-files "resources/templates" #".+(jpg|jpeg|png|gif)")]
+      (fs/copy asset (io/file public blog-prefix-relative "img" (.getName asset))))))
 
 (defn copy-resources [{:keys [blog-prefix resources]}]  
   (doseq [resource resources]
