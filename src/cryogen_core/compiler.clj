@@ -1,7 +1,8 @@
 (ns cryogen-core.compiler
   (:require [selmer.parser :refer [cache-off! render-file]]
             [cryogen-core.io :refer
-             [get-resource find-assets create-folder wipe-public-folder copy-resources]]
+             [get-resource find-assets create-folder wipe-public-folder copy-resources
+              copy-images-from-markdown-folders]]
             [cryogen-core.sitemap :as sitemap]
             [cryogen-core.rss :as rss]
             [io.aviso.exception :refer [write-exception]]
@@ -288,6 +289,7 @@
     (wipe-public-folder keep-files)
     (println (blue "copying resources"))
     (copy-resources config)
+    (copy-images-from-markdown-folders config)
     (compile-pages default-params pages config)
     (compile-posts default-params posts config)
     (compile-tags default-params posts-by-tag config)
