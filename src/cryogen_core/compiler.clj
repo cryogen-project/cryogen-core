@@ -78,6 +78,7 @@
     (->> (java.io.BufferedReader. rdr)
          (line-seq)
          (s/join "\n"))
+    :reference-links? true   
     :heading-anchors true
     :replacement-transformers (conj transformer-vector (partial rewrite-hrefs config))))
 
