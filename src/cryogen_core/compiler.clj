@@ -317,4 +317,5 @@
           (write-exception e))))))
 
 (defn -main []
-  (compile-assets-timed))
+  (compile-assets-timed)
+  (System/exit 0))
