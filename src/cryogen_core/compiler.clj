@@ -78,7 +78,7 @@
     (->> (java.io.BufferedReader. rdr)
          (line-seq)
          (s/join "\n"))
-    :reference-links? true   
+    :reference-links? true
     :heading-anchors true
     :replacement-transformers (conj transformer-vector (partial rewrite-hrefs config))))
 
@@ -301,7 +301,9 @@
     (println (blue "generating rss"))
     (spit (str public blog-prefix "/" rss-name) (rss/make-channel config posts))
     (println (blue "compiling sass"))
-    (sass/compile-sass->css! sass-src sass-dest)))
+    (sass/compile-sass->css!
+     (str "resources/templates/" sass-src)
+     (str "resources/public" blog-prefix "/" sass-dest))))
 
 (defn compile-assets-timed []
   (time

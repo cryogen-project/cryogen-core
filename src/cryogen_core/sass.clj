@@ -26,14 +26,12 @@
       (str src-sass "/" sass-file)
       (str dest-sass "/" )))
 
-
 (defn compile-sass->css!
   "Given a directory src-sass, looks for all sass files and compiles them into
 dest-sass. Prompts you to install sass if he finds sass files and can't find
 the command. Shows you any problems it comes across when compiling. "
   [src-sass
    dest-sass]
-
   (let [sass-files (find-sass-files src-sass)]
     (if (seq sass-files)
       ;; I found sass files,
