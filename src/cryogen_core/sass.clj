@@ -39,7 +39,6 @@ the command. Shows you any problems it comes across when compiling. "
       (if (sass-installed?)
         ;; I compile all files
         (doseq [a-file sass-files]
-
           (println "Compiling Sass File:" a-file)
           (let [result   (compile-sass-file! a-file src-sass dest-sass)]
             (if (zero? (:exit result))
