@@ -11,6 +11,6 @@
                            [clj-text-decoration "0.0.3"]
                            [io.aviso/pretty "0.1.13"]
                            [hiccup "1.0.5"]
-                           [selmer "0.7.7"]
+                           [selmer "0.7.8"]
                            [markdown-clj "0.9.60"
                             :exclusions [com.keminglabs/cljx]]])
