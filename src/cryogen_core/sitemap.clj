@@ -13,13 +13,13 @@
 (defn loc [f]
   (-> f (.getAbsolutePath) (.split "resources/public/") second))
 
-(defn generate [site-url]
+(defn generate [site-url ignored-files]
   (with-out-str
     (emit
       {:tag :urlset
        :attrs {:xmlns "http://www.sitemaps.org/schemas/sitemap/0.9"}
        :content
-        (for [f (find-assets "public" ".html")]
+       (for [f (find-assets "public" ".html" ignored-files)]
          {:tag :url
           :content
           [{:tag :loc
