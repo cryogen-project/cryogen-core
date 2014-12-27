@@ -26,18 +26,18 @@
 
 (defn find-md-assets
   "Returns a list of files ending with .md under templates"
-  []
-  (find-assets "templates" ".md"))
+  [ignored-files]
+  (find-assets "templates" ".md" ignored-files))
 
 (defn find-posts
   "Returns a list of markdown files representing posts under the post root in templates/md"
-  [{:keys [post-root]}]
-  (find-assets (str "templates/md" post-root) ".md"))
+  [{:keys [post-root ignored-files]}]
+  (find-assets (str "templates/md" post-root) ".md" ignored-files))
 
 (defn find-pages
   "Returns a list of markdown files representing pages under the page root in templates/md"
-  [{:keys [page-root]}]
-  (find-assets (str "templates/md" page-root) ".md"))
+  [{:keys [page-root ignored-files]}]
+  (find-assets (str "templates/md" page-root) ".md" ignored-files))
 
 (defn parse-post-date
   "Parses the post date from the post's file name and returns the corresponding java date object"
@@ -257,7 +257,8 @@
                    (update-in [:sass-src] (fnil str "css"))
                    (update-in [:sass-dest] (fnil str "css"))
                    (update-in [:post-date-format] (fnil str "yyyy-MM-dd"))
-                   (update-in [:keep-files] (fnil seq [])))
+                   (update-in [:keep-files] (fnil seq []))
+                   (update-in [:ignored-files] (fnil seq [#"^\.#.*" #".*\.swp$"])))
         site-url (:site-url config)
         blog-prefix (:blog-prefix config)]
     (merge
@@ -272,7 +273,7 @@
   "Generates all the html and copies over resources specified in the config"
   []
   (println (green "compiling assets..."))
-  (let [{:keys [site-url blog-prefix rss-name recent-posts sass-src sass-dest keep-files] :as config} (read-config)
+  (let [{:keys [site-url blog-prefix rss-name recent-posts sass-src sass-dest keep-files ignored-files] :as config} (read-config)
         posts (add-prev-next (read-posts config))
         pages (add-prev-next (read-pages config))
         [navbar-pages sidebar-pages] (group-pages pages)
@@ -297,7 +298,7 @@
     (compile-index default-params config)
     (compile-archives default-params posts config)
     (println (blue "generating site map"))
-    (spit (str public blog-prefix "/sitemap.xml") (sitemap/generate site-url))
+    (spit (str public blog-prefix "/sitemap.xml") (sitemap/generate site-url ignored-files))
     (println (blue "generating rss"))
     (spit (str public blog-prefix "/" rss-name) (rss/make-channel config posts))
     (println (blue "compiling sass"))

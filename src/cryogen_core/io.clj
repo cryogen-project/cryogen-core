@@ -11,9 +11,16 @@
       (.toURI)
       (io/file)))
 
-(defn find-assets [f ext]
+(defn ignore [ignored-files]
+  (fn [file]
+    (let [name    (.getName file)
+          matches (map #(re-find % name) ignored-files)]
+      (not (some seq matches)))))
+
+(defn find-assets [f ext ignored-files]
   (->> (get-resource f)
        file-seq
+       (filter (ignore ignored-files))
        (filter (fn [file] (-> file .getName (.endsWith ext))))))
 
 (defn create-folder [folder]
