@@ -1,4 +1,4 @@
-(defproject cryogen-core "0.1.8"
+(defproject cryogen-core "0.1.9"
             :description "Cryogen's compiler"
             :url "https://github.com/lacarmen/cryogen-core"
             :license {:name "Eclipse Public License"
@@ -13,4 +13,5 @@
                            [hiccup "1.0.5"]
                            [selmer "0.7.8"]
                            [markdown-clj "0.9.60"
-                            :exclusions [com.keminglabs/cljx]]])
+                            :exclusions [com.keminglabs/cljx]]
+                           [org.asciidoctor/asciidoctorj "1.5.2"]])
