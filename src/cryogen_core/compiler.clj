@@ -184,12 +184,11 @@
             (render-file "templates/html/layouts/page.html"
                          (merge default-params
                                 {:servlet-context "../"
-                                 :page            page
-                                 :asset-url       asset-url}))))))
+                                 :page            page}))))))
 
 (defn compile-posts
   "Compiles all the posts into html and spits them out into the public folder"
-  [default-params posts {:keys [blog-prefix post-root disqus-shortname asset-url]}]
+  [default-params posts {:keys [blog-prefix post-root disqus-shortname]}]
   (when-not (empty? posts)
     (println (blue "compiling posts"))
     (create-folder (str blog-prefix post-root))
@@ -200,8 +199,7 @@
                          (merge default-params
                                 {:servlet-context  "../"
                                  :post             post
-                                 :disqus-shortname disqus-shortname
-                                 :asset-url        asset-url}))))))
+                                 :disqus-shortname disqus-shortname}))))))
 
 (defn compile-tags
   "Compiles all the tag pages into html and spits them out into the public folder"
@@ -220,15 +218,14 @@
 
 (defn compile-index
   "Compiles the index page into html and spits it out into the public folder"
-  [default-params {:keys [blog-prefix disqus? asset-url]}]
+  [default-params {:keys [blog-prefix disqus?]}]
   (println (blue "compiling index"))
   (spit (str public blog-prefix "/index.html")
         (render-file "templates/html/layouts/home.html"
                      (merge default-params
-                            {:home      true
-                             :disqus?   disqus?
-                             :post      (get-in default-params [:latest-posts 0])
-                             :asset-url asset-url}))))
+                            {:home    true
+                             :disqus? disqus?
+                             :post    (get-in default-params [:latest-posts 0])}))))
 
 (defn compile-archives
   "Compiles the archives page into html and spits it out into the public folder"
@@ -258,16 +255,12 @@
                    (update-in [:sass-dest] (fnil str "css"))
                    (update-in [:post-date-format] (fnil str "yyyy-MM-dd"))
                    (update-in [:keep-files] (fnil seq []))
-                   (update-in [:ignored-files] (fnil seq [#"^\.#.*" #".*\.swp$"])))
-        site-url (:site-url config)
-        blog-prefix (:blog-prefix config)]
+                   (update-in [:ignored-files] (fnil seq [#"^\.#.*" #".*\.swp$"])))]
     (merge
       config
       {:page-root (root-path :page-root config)
        :post-root (root-path :post-root config)
-       :tag-root  (root-path :tag-root config)
-       :asset-root (str (if (.endsWith site-url "/") (apply str (butlast site-url)) site-url)
-                       blog-prefix)})))
+       :tag-root  (root-path :tag-root config)})))
 
 (defn compile-assets
   "Generates all the html and copies over resources specified in the config"
@@ -303,8 +296,8 @@
     (spit (str public blog-prefix "/" rss-name) (rss/make-channel config posts))
     (println (blue "compiling sass"))
     (sass/compile-sass->css!
-     (str "resources/templates/" sass-src)
-     (str "resources/public" blog-prefix "/" sass-dest))))
+      (str "resources/templates/" sass-src)
+      (str "resources/public" blog-prefix "/" sass-dest))))
 
 (defn compile-assets-timed []
   (time
