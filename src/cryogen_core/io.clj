@@ -5,11 +5,7 @@
 (def public "resources/public")
 
 (defn get-resource [resource]
-  (-> (Thread/currentThread)
-      (.getContextClassLoader)
-      (.getResource resource)
-      (.toURI)
-      (io/file)))
+  (-> resource io/resource io/file))
 
 (defn ignore [ignored-files]
   (fn [file]
@@ -37,10 +33,10 @@
   (doseq [asset (fs/find-files "resources/templates/md" #".+(jpg|jpeg|png|gif)")]
     (io/copy asset (io/file (str public blog-prefix "/img/" (.getName asset))))))
 
-(defn copy-resources [{:keys [blog-prefix resources]}]  
+(defn copy-resources [{:keys [blog-prefix resources]}]
   (doseq [resource resources]
     (let [src (str "resources/templates/" resource)
-          target (str public blog-prefix "/" resource)]      
+          target (str public blog-prefix "/" resource)]
       (cond
         (not (.exists (io/file src)))
         (throw (IllegalArgumentException. (str "resource " src " not found")))
