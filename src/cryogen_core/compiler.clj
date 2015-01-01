@@ -303,16 +303,16 @@
     (spit (str public blog-prefix "/" rss-name) (rss/make-channel config posts))
     (println (blue "compiling sass"))
     (sass/compile-sass->css!
-      (str "resources/templates/" sass-src)
-      (str "resources/public" blog-prefix "/" sass-dest))))
+     (str "resources/templates/" sass-src)
+     (str "resources/public" blog-prefix "/" sass-dest)
+     ignored-files)))
 
 (defn compile-assets-timed []
   (time
     (try
       (compile-assets)
       (catch Exception e
-        (if
-          (or (instance? IllegalArgumentException e)
-              (instance? clojure.lang.ExceptionInfo e))
+        (if (or (instance? IllegalArgumentException e)
+                (instance? clojure.lang.ExceptionInfo e))
           (println (red "Error:") (yellow (.getMessage e)))
           (write-exception e))))))
