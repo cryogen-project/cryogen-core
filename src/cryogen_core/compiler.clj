@@ -174,7 +174,7 @@
 
 (defn compile-pages
   "Compiles all the pages into html and spits them out into the public folder"
-  [default-params pages {:keys [blog-prefix page-root asset-url]}]
+  [default-params pages {:keys [blog-prefix page-root]}]
   (when-not (empty? pages)
     (println (blue "compiling pages"))
     (create-folder (str blog-prefix page-root))
@@ -184,7 +184,8 @@
             (render-file "templates/html/layouts/page.html"
                          (merge default-params
                                 {:servlet-context "../"
-                                 :page            page}))))))
+                                 :page            page
+                                 :uri             uri}))))))
 
 (defn compile-posts
   "Compiles all the posts into html and spits them out into the public folder"
@@ -199,7 +200,8 @@
                          (merge default-params
                                 {:servlet-context  "../"
                                  :post             post
-                                 :disqus-shortname disqus-shortname}))))))
+                                 :disqus-shortname disqus-shortname
+                                 :uri              (:uri post)}))))))
 
 (defn compile-tags
   "Compiles all the tag pages into html and spits them out into the public folder"
@@ -212,9 +214,11 @@
         (println "\t-->" (cyan uri))
         (spit (str public uri)
               (render-file "templates/html/layouts/tag.html"
-                           (merge default-params {:servlet-context "../"
-                                                  :name            name
-                                                  :posts           posts})))))))
+                           (merge default-params
+                                  {:servlet-context "../"
+                                   :name            name
+                                   :posts           posts
+                                   :uri             uri})))))))
 
 (defn compile-index
   "Compiles the index page into html and spits it out into the public folder"
@@ -225,7 +229,8 @@
                      (merge default-params
                             {:home    true
                              :disqus? disqus?
-                             :post    (get-in default-params [:latest-posts 0])}))))
+                             :post    (get-in default-params [:latest-posts 0])
+                             :uri     (str blog-prefix "/index.html")}))))
 
 (defn compile-archives
   "Compiles the archives page into html and spits it out into the public folder"
@@ -235,7 +240,8 @@
         (render-file "templates/html/layouts/archives.html"
                      (merge default-params
                             {:archives true
-                             :groups   (group-for-archive posts)}))))
+                             :groups   (group-for-archive posts)
+                             :uri      (str blog-prefix "/archives.html")}))))
 
 (defn tag-posts
   "Converts the tags in each post into links"
@@ -279,7 +285,8 @@
                         :sidebar-pages sidebar-pages
                         :archives-uri  (str blog-prefix "/archives.html")
                         :index-uri     (str blog-prefix "/index.html")
-                        :rss-uri       (str blog-prefix "/" rss-name)}]
+                        :rss-uri       (str blog-prefix "/" rss-name)
+                        :site-url      (if (.endsWith site-url "/") (.substring site-url 0 (dec (count site-url))) site-url)}]
 
     (wipe-public-folder keep-files)
     (println (blue "copying resources"))
