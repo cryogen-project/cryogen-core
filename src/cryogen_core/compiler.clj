@@ -257,6 +257,7 @@
                    read-string
                    (update-in [:blog-prefix] (fnil str ""))
                    (update-in [:rss-name] (fnil str "rss.xml"))
+                   (update-in [:rss-filters] (fnil seq []))
                    (update-in [:sass-src] (fnil str "css"))
                    (update-in [:sass-dest] (fnil str "css"))
                    (update-in [:post-date-format] (fnil str "yyyy-MM-dd"))
@@ -299,8 +300,10 @@
     (compile-archives default-params posts config)
     (println (blue "generating site map"))
     (spit (str public blog-prefix "/sitemap.xml") (sitemap/generate site-url ignored-files))
-    (println (blue "generating rss"))
+    (println (blue "generating main rss"))
     (spit (str public blog-prefix "/" rss-name) (rss/make-channel config posts))
+    (println (blue "generating filtered rss"))
+    (rss/make-filtered-channels public config posts-by-tag)
     (println (blue "compiling sass"))
     (sass/compile-sass->css!
      (str "resources/templates/" sass-src)

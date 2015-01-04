@@ -1,6 +1,7 @@
 (ns cryogen-core.rss
   (:require [clj-rss.core :as rss]
-            [clojure.xml :refer [emit]])
+            [clojure.xml :refer [emit]]
+            [text-decoration.core :refer :all])
   (:import java.util.Date))
 
 
@@ -26,3 +27,9 @@
               :lastBuildDate (Date.)
               :author        (:author config)})
     (posts-to-items (:site-url config) (:author config) posts)))
+
+(defn make-filtered-channels [public {:keys [rss-filters blog-prefix] :as config} posts-by-tag]
+  (doseq [filter rss-filters]
+    (let [uri (str public blog-prefix "/" (name filter) ".xml")]
+      (println "\t-->" (cyan uri))
+      (spit uri (make-channel config (get posts-by-tag filter))))))
