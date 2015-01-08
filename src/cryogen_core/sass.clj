@@ -1,23 +1,18 @@
 (ns cryogen-core.sass
   (:require [clojure.java.shell :refer [sh]]
             [clojure.java.io :as io]
-            [cryogen-core.io :refer [ignore]]))
+            [cryogen-core.io :refer [ignore match-re-filter]]))
 
 (defn sass-installed?
   "Checks for the installation of Sass."
   []
   (= 0 (:exit (sh "sass" "--version"))))
 
-(defn re-filter [re]
-  (reify java.io.FilenameFilter
-    (accept [this _ name]
-      (not (nil? (re-find re name))))))
-
 (defn find-sass-files
   "Given a Diretory, gets files, Filtered to those having scss or sass
   extention. Ignores files matching any ignored regexps."
   [dir ignored-files]
-  (let [filename-filter (re-filter #"(?i:s[ca]ss$)")]
+  (let [filename-filter (match-re-filter #"(?i:s[ca]ss$)")]
     (->> (.listFiles (io/file dir) filename-filter)
          (filter #(not (.isDirectory %)))
          (filter (ignore ignored-files))
