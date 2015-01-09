@@ -51,14 +51,14 @@
     (dir [this] "asc")
     (ext [this] ".asc")
     (render-fn [this]
-      (let [attributes (java.util.HashMap. {"toc" "macro"})
-            options    (java.util.HashMap. {"attributes" attributes})]
-        (fn [rdr _]
+      (fn [rdr config]
+        (->>
           (.convert (Asciidoctor$Factory/create)
-                    (->> (java.io.BufferedReader. rdr)
-                         (line-seq)
-                         (s/join "\n"))
-                    options))))))
+                   (->> (java.io.BufferedReader. rdr)
+                        (line-seq)
+                        (s/join "\n"))
+                   (Collections/emptyMap))
+          (rewrite-hrefs (:blog-prefix config)))))))
 
 (defn markups
   "Return a vector of Markup implementations. This is the primary entry point
