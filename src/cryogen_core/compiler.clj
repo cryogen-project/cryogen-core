@@ -184,7 +184,7 @@
 
 (defn compile-pages
   "Compiles all the pages into html and spits them out into the public folder"
-  [default-params pages {:keys [blog-prefix page-root asset-url]}]
+  [default-params pages {:keys [blog-prefix page-root]}]
   (when-not (empty? pages)
     (println (blue "compiling pages"))
     (create-folder (str blog-prefix page-root))
@@ -195,11 +195,11 @@
                          (merge default-params
                                 {:servlet-context "../"
                                  :page            page
-                                 :asset-url       asset-url}))))))
+                                 :uri             uri}))))))
 
 (defn compile-posts
   "Compiles all the posts into html and spits them out into the public folder"
-  [default-params posts {:keys [blog-prefix post-root disqus-shortname asset-url]}]
+  [default-params posts {:keys [blog-prefix post-root disqus-shortname]}]
   (when-not (empty? posts)
     (println (blue "compiling posts"))
     (create-folder (str blog-prefix post-root))
@@ -211,7 +211,7 @@
                                 {:servlet-context  "../"
                                  :post             post
                                  :disqus-shortname disqus-shortname
-                                 :asset-url        asset-url}))))))
+                                 :uri              (:uri post)}))))))
 
 (defn compile-tags
   "Compiles all the tag pages into html and spits them out into the public folder"
@@ -224,21 +224,23 @@
         (println "\t-->" (cyan uri))
         (spit (str public uri)
               (render-file "templates/html/layouts/tag.html"
-                           (merge default-params {:servlet-context "../"
-                                                  :name            name
-                                                  :posts           posts})))))))
+                           (merge default-params
+                                  {:servlet-context "../"
+                                   :name            name
+                                   :posts           posts
+                                   :uri             uri})))))))
 
 (defn compile-index
   "Compiles the index page into html and spits it out into the public folder"
-  [default-params {:keys [blog-prefix disqus? asset-url]}]
+  [default-params {:keys [blog-prefix disqus?]}]
   (println (blue "compiling index"))
   (spit (str public blog-prefix "/index.html")
         (render-file "templates/html/layouts/home.html"
                      (merge default-params
-                            {:home      true
-                             :disqus?   disqus?
-                             :post      (get-in default-params [:latest-posts 0])
-                             :asset-url asset-url}))))
+                            {:home    true
+                             :disqus? disqus?
+                             :post    (get-in default-params [:latest-posts 0])
+                             :uri     (str blog-prefix "/index.html")}))))
 
 (defn compile-archives
   "Compiles the archives page into html and spits it out into the public folder"
@@ -248,7 +250,8 @@
         (render-file "templates/html/layouts/archives.html"
                      (merge default-params
                             {:archives true
-                             :groups   (group-for-archive posts)}))))
+                             :groups   (group-for-archive posts)
+                             :uri      (str blog-prefix "/archives.html")}))))
 
 (defn tag-posts
   "Converts the tags in each post into links"
@@ -264,20 +267,17 @@
                    read-string
                    (update-in [:blog-prefix] (fnil str ""))
                    (update-in [:rss-name] (fnil str "rss.xml"))
+                   (update-in [:rss-filters] (fnil seq []))
                    (update-in [:sass-src] (fnil str "css"))
                    (update-in [:sass-dest] (fnil str "css"))
                    (update-in [:post-date-format] (fnil str "yyyy-MM-dd"))
                    (update-in [:keep-files] (fnil seq []))
-                   (update-in [:ignored-files] (fnil seq [#"^\.#.*" #".*\.swp$"])))
-        site-url (:site-url config)
-        blog-prefix (:blog-prefix config)]
+                   (update-in [:ignored-files] (fnil seq [#"^\.#.*" #".*\.swp$"])))]
     (merge
       config
       {:page-root (root-path :page-root config)
        :post-root (root-path :post-root config)
-       :tag-root  (root-path :tag-root config)
-       :asset-root (str (if (.endsWith site-url "/") (apply str (butlast site-url)) site-url)
-                       blog-prefix)})))
+       :tag-root  (root-path :tag-root config)})))
 
 (defn compile-assets
   "Generates all the html and copies over resources specified in the config"
@@ -296,7 +296,8 @@
                         :sidebar-pages sidebar-pages
                         :archives-uri  (str blog-prefix "/archives.html")
                         :index-uri     (str blog-prefix "/index.html")
-                        :rss-uri       (str blog-prefix "/" rss-name)}]
+                        :rss-uri       (str blog-prefix "/" rss-name)
+                        :site-url      (if (.endsWith site-url "/") (.substring site-url 0 (dec (count site-url))) site-url)}]
 
     (wipe-public-folder keep-files)
     (println (blue "copying resources"))
@@ -309,20 +310,22 @@
     (compile-archives default-params posts config)
     (println (blue "generating site map"))
     (spit (str public blog-prefix "/sitemap.xml") (sitemap/generate site-url ignored-files))
-    (println (blue "generating rss"))
+    (println (blue "generating main rss"))
     (spit (str public blog-prefix "/" rss-name) (rss/make-channel config posts))
+    (println (blue "generating filtered rss"))
+    (rss/make-filtered-channels public config posts-by-tag)
     (println (blue "compiling sass"))
     (sass/compile-sass->css!
      (str "resources/templates/" sass-src)
-     (str "resources/public" blog-prefix "/" sass-dest))))
+     (str "resources/public" blog-prefix "/" sass-dest)
+     ignored-files)))
 
 (defn compile-assets-timed []
   (time
     (try
       (compile-assets)
       (catch Exception e
-        (if
-          (or (instance? IllegalArgumentException e)
-              (instance? clojure.lang.ExceptionInfo e))
+        (if (or (instance? IllegalArgumentException e)
+                (instance? clojure.lang.ExceptionInfo e))
           (println (red "Error:") (yellow (.getMessage e)))
           (write-exception e))))))
