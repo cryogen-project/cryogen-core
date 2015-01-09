@@ -13,4 +13,5 @@
                  [hiccup "1.0.5"]
                  [selmer "0.7.8"]
                  [markdown-clj "0.9.62"]
-                 [pandect "0.4.1"]])
+                 [pandect "0.4.1"]
+                 [org.asciidoctor/asciidoctorj "1.5.2"]])
