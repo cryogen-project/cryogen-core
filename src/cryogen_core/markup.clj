@@ -17,9 +17,14 @@
   "Injects the blog prefix in front of any local links
 
   ex. <img src='/img/cryogen.png'/> becomes <img src='/blog/img/cryogen.png'/>"
+  [blog-prefix text]
+  (clojure.string/replace text #"href=.?/|src=.?/" #(str (subs % 0 (dec (count %))) blog-prefix "/")))
+
+(defn- rewrite-hrefs-transformer
+  "A :replacement-transformer for use in markdown.core that will inject the
+  given blog prefix in front of local links."
   [{:keys [blog-prefix]} text state]
-  [(clojure.string/replace text #"href=.?/|src=.?/" #(str (subs % 0 (dec (count %))) blog-prefix "/"))
-   state])
+  [(rewrite-hrefs blog-prefix text) state])
 
 (defn- markdown
   "Returns a Markdown (https://daringfireball.net/projects/markdown/)
