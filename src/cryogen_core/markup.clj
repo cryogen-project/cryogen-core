@@ -31,12 +31,12 @@
     (render-fn [this]
       (fn [rdr config]
         (md-to-html-string
-    (->> (java.io.BufferedReader. rdr)
-         (line-seq)
-         (s/join "\n"))
-    :reference-links? true
-    :heading-anchors true
-    :replacement-transformers (conj transformer-vector (partial rewrite-hrefs config)))))))
+          (->> (java.io.BufferedReader. rdr)
+            (line-seq)
+            (s/join "\n"))
+          :reference-links? true
+          :heading-anchors true
+          :replacement-transformers (conj transformer-vector (partial rewrite-hrefs-transformer config)))))))
 
 (defn- asciidoc
   "Returns an Asciidoc (http://asciidoc.org/) implementation of the
