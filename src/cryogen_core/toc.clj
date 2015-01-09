@@ -5,7 +5,10 @@
 (def _h [:h1 :h2 :h3 :h4 :h5 :h6])
 (defn- compare_index [i1 i2] (- (.indexOf _h i2) (.indexOf _h i1)))
 
-(defn get-headings [content]
+(defn- get-headings
+  "Turn a body of html content into a vector of elements whose tags are
+  headings."
+  [content]
   (reduce
     (fn [headings {:keys [tag attrs content] :as elm}]
       (if (some #{tag} _h)
