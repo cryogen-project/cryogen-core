@@ -22,11 +22,18 @@
           matches (map #(re-find % name) ignored-files)]
       (not (some seq matches)))))
 
-(defn find-assets [f ext ignored-files]
-  (->> (get-resource f)
-       file-seq
-       (filter (ignore ignored-files))
-       (filter (fn [file] (-> file .getName (.endsWith ext))))))
+(defn find-assets
+  "Find all assets in the given root directory (f) and the given file
+  extension (ext) ignoring any files that match the given (ignored-files).
+  First make sure that the root directory exists, if yes: process as normal;
+  if no, return empty vector."
+  [f ext ignored-files]
+  (if-let [root (get-resource f)]
+    (->> (get-resource f)
+         file-seq
+         (filter (ignore ignored-files))
+         (filter (fn [file] (-> file .getName (.endsWith ext)))))
+    []))
 
 (defn create-folder [folder]
   (let [loc (io/file (str public folder))]
