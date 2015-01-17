@@ -12,4 +12,4 @@
                  [io.aviso/pretty "0.1.13"]
                  [hiccup "1.0.5"]
                  [selmer "0.7.9"]
-                 [pandect "0.4.1"]])
+                 [pandect "0.5.0"]])
