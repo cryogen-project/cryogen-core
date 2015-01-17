@@ -11,5 +11,5 @@
                  [clj-text-decoration "0.0.3"]
                  [io.aviso/pretty "0.1.13"]
                  [hiccup "1.0.5"]
-                 [selmer "0.7.8"]
+                 [selmer "0.7.9"]
                  [pandect "0.4.1"]])
