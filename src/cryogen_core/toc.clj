@@ -42,7 +42,7 @@
 
 (defn generate-toc [html]
   (-> html
-      (.getBytes)
+      (.getBytes "UTF-8")
       (java.io.ByteArrayInputStream.)
       (html/parse)
       :content
