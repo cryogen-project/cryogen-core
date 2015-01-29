@@ -23,6 +23,11 @@
   (if-let [root (k config)]
     (str "/" root "/") "/"))
 
+(defn re-pattern-from-ext
+  "Creates a properly quoted regex pattern for the given file extension"
+  [ext]
+  (re-pattern (str (s/replace ext "." "\\.") "$")))
+
 (defn find-md-assets
   "Returns a list of files ending with .md under templates"
   [ignored-files]
@@ -47,12 +52,12 @@
 (defn post-uri
   "Creates a post uri from the post file name"
   [file-name {:keys [blog-prefix post-root]} mu]
-  (str blog-prefix post-root (s/replace file-name (re-pattern (m/ext mu)) ".html")))
+  (str blog-prefix post-root (s/replace file-name (re-pattern-from-ext (m/ext mu)) ".html")))
 
 (defn page-uri
   "Creates a page uri from the page file name"
   [page-name {:keys [blog-prefix page-root]} mu]
-  (str blog-prefix page-root (s/replace page-name (re-pattern (m/ext mu)) ".html")))
+  (str blog-prefix page-root (s/replace page-name (re-pattern-from-ext (m/ext mu)) ".html")))
 
 (defn read-page-meta
   "Returns the clojure map from the top of a markdown page/post"
@@ -68,7 +73,7 @@
   [page config markup]
   (with-open [rdr (java.io.PushbackReader. (reader page))]
     (let [page-name (.getName page)
-          file-name (s/replace page-name (re-pattern (m/ext markup)) ".html")
+          file-name (s/replace page-name (re-pattern-from-ext (m/ext markup)) ".html")
           page-meta (read-page-meta page-name rdr)
           content ((m/render-fn markup) rdr config)]
       {:file-name file-name
