@@ -1,12 +1,22 @@
 (ns cryogen-core.sass
-  (:require [clojure.java.shell :refer [sh]]
+  (:require [clojure.java.shell :as shell]
             [clojure.java.io :as io]
             [cryogen-core.io :refer [ignore match-re-filter]]))
+
+(defmacro sh
+  [& args]
+  (let [valid-args (remove nil? args)]
+    `(shell/sh ~@valid-args)))
 
 (defn sass-installed?
   "Checks for the installation of Sass."
   []
   (= 0 (:exit (sh "sass" "--version"))))
+
+(defn compass-installed?
+   "Checks for the installation of Compass."
+   []
+   (= 0 (:exit (sh "compass" "--version"))))
 
 (defn find-sass-files
   "Given a Diretory, gets files, Filtered to those having scss or sass
@@ -24,9 +34,11 @@
     done by sh / launching the sass command."
   [sass-file
    src-sass
-   dest-sass]
+   dest-sass
+   compass?]
   (sh "sass"
       "--update"
+      (when compass? "--compass")
       (str src-sass "/" sass-file)
       (str dest-sass "/" )))
 
@@ -42,15 +54,16 @@ the command. Shows you any problems it comes across when compiling. "
       ;; I found sass files,
       ;; If sass is installed
       (if (sass-installed?)
-        ;; I compile all files
-        (doseq [a-file sass-files]
-          (println "Compiling Sass File:" a-file)
-          (let [result   (compile-sass-file! a-file src-sass dest-sass)]
-            (if (zero? (:exit result))
-              ;; no problems in sass compilation
-              (println "Successfully compiled:" a-file)
-              ;; else I show the error
-              (println (:err result)))))
+        (let [compass? (compass-installed?)]
+         ;; I compile all files
+         (doseq [a-file sass-files]
+           (println "Compiling Sass File:" a-file src-sass dest-sass)
+           (let [result   (compile-sass-file! a-file src-sass dest-sass compass?)]
+             (if (zero? (:exit result))
+               ;; no problems in sass compilation
+               (println "Successfully compiled:" a-file)
+               ;; else I show the error
+               (println (:err result))))))
         ;; Else I prompt to install Sass
         (println "Sass seems not to be installed, but you have scss / sass files in "
                  src-sass
