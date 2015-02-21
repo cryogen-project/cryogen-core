@@ -321,9 +321,9 @@
     (rss/make-filtered-channels public config posts-by-tag)
     (println (blue "compiling sass"))
     (sass/compile-sass->css!
-     (str "resources/templates/" sass-src)
-     (str "resources/public" blog-prefix "/" sass-dest)
-     ignored-files)))
+     {:src-sass (str "resources/templates/" sass-src)
+      :dest-sass (str "resources/public" blog-prefix "/" sass-dest)
+      :ignored-files ignored-files})))
 
 (defn compile-assets-timed []
   (time
