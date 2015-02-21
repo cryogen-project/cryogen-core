@@ -1,6 +1,7 @@
 (ns cryogen-core.sass
   (:require [clojure.java.shell :as shell]
             [clojure.java.io :as io]
+            [text-decoration.core :refer :all]
             [cryogen-core.io :refer [ignore match-re-filter]]))
 
 (defmacro sh
@@ -63,7 +64,8 @@ the command. Shows you any problems it comes across when compiling. "
                ;; no problems in sass compilation
                (println "Successfully compiled:" a-file)
                ;; else I show the error
-               (println (:err result))))))
+               (println (red (:err result))
+                        (red (:out result)))))))
         ;; Else I prompt to install Sass
         (println "Sass seems not to be installed, but you have scss / sass files in "
                  src-sass
