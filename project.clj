@@ -9,7 +9,7 @@
                  [crouton "0.1.2"]
                  [cheshire "5.4.0"]
                  [clj-text-decoration "0.0.3"]
-                 [io.aviso/pretty "0.1.14"]
+                 [io.aviso/pretty "0.1.17"]
                  [hiccup "1.0.5"]
                  [selmer "0.8.0"]
-                 [pandect "0.5.0"]])
+                 [pandect "0.5.1"]])
