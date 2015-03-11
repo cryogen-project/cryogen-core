@@ -5,7 +5,7 @@
   (:import java.util.Date))
 
 
-(defn posts-to-items [site-url author posts]
+(defn posts-to-items [site-url posts]
   (map
     (fn [{:keys [uri title content date]}]
       (let [link (str (if (.endsWith site-url "/") (apply str (butlast site-url)) site-url) uri)]
@@ -13,8 +13,7 @@
          :link        link
          :title       title
          :description content
-         :pubDate     date
-         :author      author}))
+         :pubDate     date}))
     posts))
 
 (defn make-channel [config posts]
@@ -24,9 +23,8 @@
              {:title         (:site-title config)
               :link          (:site-url config)
               :description   (:description config)
-              :lastBuildDate (Date.)
-              :author        (:author config)})
-    (posts-to-items (:site-url config) (:author config) posts)))
+              :lastBuildDate (Date.)})
+    (posts-to-items (:site-url config) posts)))
 
 (defn make-filtered-channels [public {:keys [rss-filters blog-prefix] :as config} posts-by-tag]
   (doseq [filter rss-filters]
