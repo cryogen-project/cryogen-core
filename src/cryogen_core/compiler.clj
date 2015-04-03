@@ -266,23 +266,26 @@
 (defn read-config
   "Reads the config file"
   []
-  (let [config (-> "templates/config.edn"
-                   get-resource
-                   slurp
-                   read-string
-                   (update-in [:blog-prefix] (fnil str ""))
-                   (update-in [:rss-name] (fnil str "rss.xml"))
-                   (update-in [:rss-filters] (fnil seq []))
-                   (update-in [:sass-src] (fnil str "css"))
-                   (update-in [:sass-dest] (fnil str "css"))
-                   (update-in [:post-date-format] (fnil str "yyyy-MM-dd"))
-                   (update-in [:keep-files] (fnil seq []))
-                   (update-in [:ignored-files] (fnil seq [#"^\.#.*" #".*\.swp$"])))]
-    (merge
-      config
-      {:page-root (root-path :page-root config)
-       :post-root (root-path :post-root config)
-       :tag-root  (root-path :tag-root config)})))
+  (try
+    (let [config (-> "templates/config.edn"
+                     get-resource
+                     slurp
+                     read-string
+                     (update-in [:blog-prefix] (fnil str ""))
+                     (update-in [:rss-name] (fnil str "rss.xml"))
+                     (update-in [:rss-filters] (fnil seq []))
+                     (update-in [:sass-src] (fnil str "css"))
+                     (update-in [:sass-dest] (fnil str "css"))
+                     (update-in [:post-date-format] (fnil str "yyyy-MM-dd"))
+                     (update-in [:keep-files] (fnil seq []))
+                     (update-in [:ignored-files] (fnil seq [#"^\.#.*" #".*\.swp$"])))]
+      (merge
+       config
+       {:page-root (root-path :page-root config)
+        :post-root (root-path :post-root config)
+        :tag-root  (root-path :tag-root config)}))
+    (catch Exception _
+      (throw (IllegalArgumentException. "Failed to parse config.edn")))))
 
 (defn compile-assets
   "Generates all the html and copies over resources specified in the config"
