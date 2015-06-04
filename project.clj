@@ -7,7 +7,7 @@
                  [clj-rss "0.1.9"]
                  [me.raynes/fs "1.4.6"]
                  [crouton "0.1.2"]
-                 [cheshire "5.4.0"]
+                 [cheshire "5.5.0"]
                  [clj-text-decoration "0.0.3"]
                  [io.aviso/pretty "0.1.18"]
                  [hiccup "1.0.5"]
