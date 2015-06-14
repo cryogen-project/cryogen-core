@@ -45,10 +45,6 @@
     (doseq [path (.listFiles (io/file public) filenamefilter)]
       (fs/delete-dir path))))
 
-(defn copy-images-from-markdown-folders [{:keys [blog-prefix]}]
-  (doseq [asset (fs/find-files "resources/templates/md" #".+(jpg|jpeg|png|gif)")]
-    (io/copy asset (io/file (str public blog-prefix "/img/" (.getName asset))))))
-
 (defn copy-dir [src target ignored-files]
   (fs/mkdirs target)
   (let [filename-filter (apply reject-re-filter ignored-files)
@@ -62,7 +58,7 @@
 (defn copy-resources [{:keys [blog-prefix resources ignored-files]}]
   (doseq [resource resources]
     (let [src (str "resources/templates/" resource)
-          target (str public blog-prefix "/" resource)]
+          target (str public blog-prefix "/" (fs/base-name resource))]
       (cond
         (not (.exists (io/file src)))
         (throw (IllegalArgumentException. (str "resource " src " not found")))
