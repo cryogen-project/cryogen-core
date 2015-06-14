@@ -1,5 +1,6 @@
 (ns cryogen-core.compiler
   (:require [selmer.parser :refer [cache-off! render-file]]
+            [selmer.util :refer [set-custom-resource-path!]]
             [cryogen-core.io :refer
              [get-resource find-assets create-folder wipe-public-folder copy-resources
               copy-images-from-markdown-folders]]
@@ -196,7 +197,7 @@
     (doseq [{:keys [uri] :as page} pages]
       (println "\t-->" (cyan uri))
       (spit (str public uri)
-            (render-file "templates/html/layouts/page.html"
+            (render-file "page.html"
                          (merge params
                                 {:servlet-context "../"
                                  :page            page
@@ -211,7 +212,7 @@
     (doseq [post posts]
       (println "\t-->" (cyan (:uri post)))
       (spit (str public (:uri post))
-            (render-file (str "templates/html/layouts/" (:layout post))
+            (render-file (str (:layout post))
                          (merge params
                                 {:servlet-context  "../"
                                  :post             post
@@ -228,7 +229,7 @@
       (let [{:keys [name uri]} (tag-info params tag)]
         (println "\t-->" (cyan uri))
         (spit (str public uri)
-              (render-file "templates/html/layouts/tag.html"
+              (render-file "tag.html"
                            (merge params
                                   {:servlet-context "../"
                                    :name            name
@@ -240,7 +241,7 @@
   [{:keys [blog-prefix disqus?] :as params}]
   (println (blue "compiling index"))
   (spit (str public blog-prefix "/index.html")
-        (render-file "templates/html/layouts/home.html"
+        (render-file "home.html"
                      (merge params
                             {:home    true
                              :disqus? disqus?
@@ -252,7 +253,7 @@
   [{:keys [blog-prefix] :as params} posts]
   (println (blue "compiling archives"))
   (spit (str public blog-prefix "/archives.html")
-        (render-file "templates/html/layouts/archives.html"
+        (render-file "archives.html"
                      (merge params
                             {:archives true
                              :groups   (group-for-archive posts)
@@ -262,6 +263,16 @@
   "Converts the tags in each post into links"
   [posts config]
   (map #(update-in % [:tags] (partial map (partial tag-info config))) posts))
+
+
+(defn copy-resources-from-theme
+  "Copy resources from theme"
+  [config]
+  (let [theme-path (str "themes/" (:theme config))]
+    (copy-resources
+      (merge config
+           {:resources [(str theme-path "/css")
+                        (str theme-path "/js")]}))))
 
 (defn read-config
   "Reads the config file"
@@ -306,9 +317,13 @@
                        :archives-uri  (str blog-prefix "/archives.html")
                        :index-uri     (str blog-prefix "/index.html")
                        :rss-uri       (str blog-prefix "/" rss-name)
-                       :site-url      (if (.endsWith site-url "/") (.substring site-url 0 (dec (count site-url))) site-url)})]
+                       :site-url      (if (.endsWith site-url "/") (.substring site-url 0 (dec (count site-url))) site-url)
+                       :site-theme-path (str "file:resources/templates/themes/" (:theme config) "/html/layouts/")})]
 
+    (set-custom-resource-path! (:site-theme-path params))
     (wipe-public-folder keep-files)
+    (println (blue "copying theme resources"))
+    (copy-resources-from-theme config)
     (println (blue "copying resources"))
     (copy-resources config)
     (copy-images-from-markdown-folders config)

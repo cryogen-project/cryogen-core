@@ -62,7 +62,7 @@
 (defn copy-resources [{:keys [blog-prefix resources ignored-files]}]
   (doseq [resource resources]
     (let [src (str "resources/templates/" resource)
-          target (str public blog-prefix "/" resource)]
+          target (str public blog-prefix "/" (fs/base-name resource))]
       (cond
         (not (.exists (io/file src)))
         (throw (IllegalArgumentException. (str "resource " src " not found")))
