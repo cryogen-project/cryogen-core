@@ -2,7 +2,8 @@
   (:require [selmer.parser :refer [cache-off! render-file]]
             [selmer.util :refer [set-custom-resource-path!]]
             [cryogen-core.io :refer
-             [get-resource find-assets create-folder wipe-public-folder copy-resources]]
+             [get-resource find-assets create-folder wipe-public-folder copy-resources
+              copy-resources-from-theme]]
             [cryogen-core.sitemap :as sitemap]
             [cryogen-core.rss :as rss]
             [io.aviso.exception :refer [write-exception]]
@@ -27,11 +28,6 @@
   "Creates a properly quoted regex pattern for the given file extension"
   [ext]
   (re-pattern (str (s/replace ext "." "\\.") "$")))
-
-(defn find-md-assets
-  "Returns a list of files ending with .md under templates"
-  [ignored-files]
-  (find-assets "templates" ".md" ignored-files))
 
 (defn find-posts
   "Returns a list of markdown files representing posts under the post root in templates/md"
@@ -111,8 +107,7 @@
         :formatted-archive-group formatted-group
         :parsed-archive-group    (.parse archive-fmt formatted-group)
         :uri                     (post-uri file-name config markup)
-        :tags                    (set (:tags page-meta))})
-     )))
+        :tags                    (set (:tags page-meta))}))))
 
 (defn read-posts
   "Returns a sequence of maps representing the data from markdown files of posts.
@@ -196,7 +191,7 @@
     (doseq [{:keys [uri] :as page} pages]
       (println "\t-->" (cyan uri))
       (spit (str public uri)
-            (render-file "page.html"
+            (render-file "/html/page.html"
                          (merge params
                                 {:servlet-context "../"
                                  :page            page
@@ -211,7 +206,7 @@
     (doseq [post posts]
       (println "\t-->" (cyan (:uri post)))
       (spit (str public (:uri post))
-            (render-file (str (:layout post))
+            (render-file (str "/html/" (:layout post))
                          (merge params
                                 {:servlet-context  "../"
                                  :post             post
@@ -228,7 +223,7 @@
       (let [{:keys [name uri]} (tag-info params tag)]
         (println "\t-->" (cyan uri))
         (spit (str public uri)
-              (render-file "tag.html"
+              (render-file "/html/tag.html"
                            (merge params
                                   {:servlet-context "../"
                                    :name            name
@@ -240,7 +235,7 @@
   [{:keys [blog-prefix disqus?] :as params}]
   (println (blue "compiling index"))
   (spit (str public blog-prefix "/index.html")
-        (render-file "home.html"
+        (render-file "/html/home.html"
                      (merge params
                             {:home    true
                              :disqus? disqus?
@@ -252,7 +247,7 @@
   [{:keys [blog-prefix] :as params} posts]
   (println (blue "compiling archives"))
   (spit (str public blog-prefix "/archives.html")
-        (render-file "archives.html"
+        (render-file "/html/archives.html"
                      (merge params
                             {:archives true
                              :groups   (group-for-archive posts)
@@ -263,16 +258,7 @@
   [posts config]
   (map #(update-in % [:tags] (partial map (partial tag-info config))) posts))
 
-(defn copy-resources-from-theme
-  "Copy resources from theme"
-  [config]
-  (let [theme-path (str "themes/" (:theme config))]
-    (copy-resources
-      (merge config
-           {:resources [(str theme-path "/css")
-                        (str theme-path "/js")]}))))
-
-(defn copy-resoures-from-markup-folders
+(defn copy-resources-from-markup-folders
   "Copy resources from markup folders"
   [config]
   (copy-resources
@@ -325,15 +311,15 @@
                        :index-uri     (str blog-prefix "/index.html")
                        :rss-uri       (str blog-prefix "/" rss-name)
                        :site-url      (if (.endsWith site-url "/") (.substring site-url 0 (dec (count site-url))) site-url)
-                       :site-theme-path (str "file:resources/templates/themes/" (:theme config) "/html/layouts/")})]
+                       :theme-path (str "file:resources/templates/themes/" (:theme config))})]
 
-    (set-custom-resource-path! (:site-theme-path params))
+    (set-custom-resource-path! (:theme-path params))
     (wipe-public-folder keep-files)
     (println (blue "copying theme resources"))
     (copy-resources-from-theme config)
     (println (blue "copying resources"))
     (copy-resources config)
-    (copy-resoures-from-markup-folders config)
+    (copy-resources-from-markup-folders config)
     (compile-pages params pages)
     (compile-posts params posts)
     (compile-tags params posts-by-tag)

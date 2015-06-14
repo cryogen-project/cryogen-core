@@ -66,3 +66,13 @@
         (copy-dir src target ignored-files)
         :else
         (fs/copy src target)))))
+
+(defn copy-resources-from-theme
+  "Copy resources from theme"
+  [config]
+  (let [theme-path (str "themes/" (:theme config))]
+    (copy-resources
+      (merge config
+             {:resources [(str theme-path "/css")
+                          (str theme-path "/js")
+                          (str theme-path "/html/404.html")]}))))
