@@ -2,8 +2,7 @@
   (:require [selmer.parser :refer [cache-off! render-file]]
             [selmer.util :refer [set-custom-resource-path!]]
             [cryogen-core.io :refer
-             [get-resource find-assets create-folder wipe-public-folder copy-resources
-              copy-images-from-markdown-folders]]
+             [get-resource find-assets create-folder wipe-public-folder copy-resources]]
             [cryogen-core.sitemap :as sitemap]
             [cryogen-core.rss :as rss]
             [io.aviso.exception :refer [write-exception]]
@@ -264,7 +263,6 @@
   [posts config]
   (map #(update-in % [:tags] (partial map (partial tag-info config))) posts))
 
-
 (defn copy-resources-from-theme
   "Copy resources from theme"
   [config]
@@ -273,6 +271,15 @@
       (merge config
            {:resources [(str theme-path "/css")
                         (str theme-path "/js")]}))))
+
+(defn copy-resoures-from-markup-folders
+  "Copy resources from markup folders"
+  [config]
+  (copy-resources
+    (merge config
+           {:resources (for [mu (m/markups)
+                             t ["posts" "pages"]] (str (m/dir mu) "/" t))
+            :ignored-files (map #(re-pattern-from-ext (m/ext %)) (m/markups))})))
 
 (defn read-config
   "Reads the config file"
@@ -326,7 +333,7 @@
     (copy-resources-from-theme config)
     (println (blue "copying resources"))
     (copy-resources config)
-    (copy-images-from-markdown-folders config)
+    (copy-resoures-from-markup-folders config)
     (compile-pages params pages)
     (compile-posts params posts)
     (compile-tags params posts-by-tag)
