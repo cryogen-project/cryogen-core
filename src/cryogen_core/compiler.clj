@@ -219,6 +219,15 @@
   (when-not (empty? posts-by-tag)
     (println (blue "compiling tags"))
     (create-folder (str blog-prefix tag-root))
+    (if (:tag-page? params)
+      (let [uri (str blog-prefix tag-root "tags.html")]
+        (println "\t-->" (cyan uri))
+        (spit (str public uri)
+              (render-file "/html/tags.html"
+                           (merge params
+                                  {:servlet-context "../"
+                                   :tags            (for [tag (sort (keys posts-by-tag))] (tag-info params tag))
+                                   :uri             uri})))))
     (doseq [[tag posts] posts-by-tag]
       (let [{:keys [name uri]} (tag-info params tag)]
         (println "\t-->" (cyan uri))
@@ -295,7 +304,7 @@
   "Generates all the html and copies over resources specified in the config"
   []
   (println (green "compiling assets..."))
-  (let [{:keys [site-url blog-prefix rss-name recent-posts sass-src sass-dest keep-files ignored-files] :as config} (read-config)
+  (let [{:keys [site-url blog-prefix rss-name recent-posts sass-src sass-dest keep-files ignored-files tag-root] :as config} (read-config)
         posts (add-prev-next (read-posts config))
         pages (add-prev-next (read-pages config))
         [navbar-pages sidebar-pages] (group-pages pages)
@@ -310,8 +319,9 @@
                        :archives-uri  (str blog-prefix "/archives.html")
                        :index-uri     (str blog-prefix "/index.html")
                        :rss-uri       (str blog-prefix "/" rss-name)
+                       :tags-uri      (str blog-prefix tag-root "tags.html")
                        :site-url      (if (.endsWith site-url "/") (.substring site-url 0 (dec (count site-url))) site-url)
-                       :theme-path (str "file:resources/templates/themes/" (:theme config))})]
+                       :theme-path    (str "file:resources/templates/themes/" (:theme config))})]
 
     (set-custom-resource-path! (:theme-path params))
     (wipe-public-folder keep-files)
