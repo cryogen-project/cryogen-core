@@ -191,7 +191,7 @@
     (doseq [{:keys [uri] :as page} pages]
       (println "\t-->" (cyan uri))
       (spit (str public uri)
-            (render-file "/html/page.html"
+            (render-file (str "/html/" (:layout page))
                          (merge params
                                 {:servlet-context "../"
                                  :page            page
