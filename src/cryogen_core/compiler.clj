@@ -1,18 +1,20 @@
 (ns cryogen-core.compiler
   (:require [selmer.parser :refer [cache-off! render-file]]
             [selmer.util :refer [set-custom-resource-path!]]
-            [cryogen-core.io :refer
-             [get-resource find-assets create-folder wipe-public-folder copy-resources
-              copy-resources-from-theme]]
-            [cryogen-core.sitemap :as sitemap]
-            [cryogen-core.rss :as rss]
             [io.aviso.exception :refer [write-exception]]
             [clojure.java.io :refer [copy file reader writer]]
             [clojure.string :as s]
             [text-decoration.core :refer :all]
+            [pl.danieljanus.tagsoup :as tagsoup]
+            [hiccup.core :as hiccup]
             [cryogen-core.toc :refer [generate-toc]]
             [cryogen-core.sass :as sass]
-            [cryogen-core.markup :as m]))
+            [cryogen-core.markup :as m]
+            [cryogen-core.io :refer
+             [get-resource find-assets create-folder wipe-public-folder copy-resources
+              copy-resources-from-theme]]
+            [cryogen-core.sitemap :as sitemap]
+            [cryogen-core.rss :as rss]))
 
 (cache-off!)
 
@@ -74,51 +76,51 @@
           content ((m/render-fn markup) rdr config)]
       {:file-name file-name
        :page-meta page-meta
-       :content content})))
+       :content   content})))
 
 (defn merge-meta-and-content
   "Merges the page metadata and content maps, adding :toc if necessary."
   [file-name page-meta content]
   (merge
-   (update-in page-meta [:layout] #(str (name %) ".html"))
-   {:file-name file-name
-    :content   content
-    :toc       (if (:toc page-meta) (generate-toc content))}))
+    (update-in page-meta [:layout] #(str (name %) ".html"))
+    {:file-name file-name
+     :content   content
+     :toc       (if (:toc page-meta) (generate-toc content))}))
 
 (defn parse-page
   "Parses a page/post and returns a map of the content, uri, date etc."
   [page config markup]
   (let [{:keys [file-name page-meta content]} (page-content page config markup)]
     (merge
-     (merge-meta-and-content file-name page-meta content)
-     {:uri (page-uri file-name config markup)
-      :page-index (:page-index page-meta)})))
+      (merge-meta-and-content file-name page-meta content)
+      {:uri        (page-uri file-name config markup)
+       :page-index (:page-index page-meta)})))
 
 (defn parse-post
   "Return a map with the given post's information."
   [page config markup]
   (let [{:keys [file-name page-meta content]} (page-content page config markup)]
     (merge
-     (merge-meta-and-content file-name page-meta content)
-     (let [date (parse-post-date file-name (:post-date-format config))
-           archive-fmt (java.text.SimpleDateFormat. "yyyy MMMM" (java.util.Locale. "en"))
-           formatted-group (.format archive-fmt date)]
-       {:date                    date
-        :formatted-archive-group formatted-group
-        :parsed-archive-group    (.parse archive-fmt formatted-group)
-        :uri                     (post-uri file-name config markup)
-        :tags                    (set (:tags page-meta))}))))
+      (merge-meta-and-content file-name page-meta content)
+      (let [date (parse-post-date file-name (:post-date-format config))
+            archive-fmt (java.text.SimpleDateFormat. "yyyy MMMM" (java.util.Locale. "en"))
+            formatted-group (.format archive-fmt date)]
+        {:date                    date
+         :formatted-archive-group formatted-group
+         :parsed-archive-group    (.parse archive-fmt formatted-group)
+         :uri                     (post-uri file-name config markup)
+         :tags                    (set (:tags page-meta))}))))
 
 (defn read-posts
   "Returns a sequence of maps representing the data from markdown files of posts.
    Sorts the sequence by post date."
   [config]
   (->> (mapcat
-        (fn [mu]
-          (->>
-           (find-posts config mu)
-           (map #(parse-post % config mu))))
-        (m/markups))
+         (fn [mu]
+           (->>
+             (find-posts config mu)
+             (map #(parse-post % config mu))))
+         (m/markups))
        (sort-by :date)
        reverse))
 
@@ -127,11 +129,11 @@
   Sorts the sequence by post date."
   [config]
   (->> (mapcat
-        (fn [mu]
-          (->>
-           (find-pages config mu)
-           (map #(parse-page % config mu))))
-        (m/markups))
+         (fn [mu]
+           (->>
+             (find-pages config mu)
+             (map #(parse-page % config mu))))
+         (m/markups))
        (sort-by :page-index)))
 
 (defn tag-post
@@ -171,8 +173,8 @@
   [pages]
   (map (fn [[prev target next]]
          (assoc target
-                :prev (if prev (select-keys prev [:title :uri]) nil)
-                :next (if next (select-keys next [:title :uri]) nil)))
+           :prev (if prev (select-keys prev [:title :uri]) nil)
+           :next (if next (select-keys next [:title :uri]) nil)))
        (partition 3 1 (flatten [nil pages nil]))))
 
 (defn group-pages
@@ -237,6 +239,51 @@
                      (merge params
                             {:uri (str blog-prefix "/tags.html")}))))
 
+(defn create-preview
+  "Creates a single post preview"
+  [blocks-per-preview post]
+  (merge (select-keys post [:title :author :date :uri])
+         {:content (or (re-find #".+?(?=<!--more-->)" (:content post))
+                       (->> ((tagsoup/parse-string (:content post)) 2)
+                            (drop 2)
+                            (take blocks-per-preview)
+                            hiccup/html))}))
+
+(defn create-previews
+  "Returns a sequence of vectors, each containing a set of post previews"
+  [posts-per-page blocks-per-preview posts]
+  (->> posts
+       (reduce (fn [v post] (conj v (create-preview blocks-per-preview post))) [])
+       (partition-all posts-per-page)
+       (map-indexed (fn [i v] {:index (inc i) :posts v}))))
+
+(defn create-preview-links
+  "Turn each vector of previews into a map with :prev and :next keys that contain the uri of the
+  prev/next preview page"
+  [previews blog-prefix]
+  (mapv (fn [[prev target next]]
+          (merge target
+                 {:prev (if prev (str blog-prefix "/p/" (:index prev)) nil)
+                  :next (if next (str blog-prefix "/p/" (:index next)) nil)}))
+        (partition 3 1 (flatten [nil previews nil]))))
+
+(defn compile-preview-pages
+  "Compiles a series of pages containing 'previews' from each post"
+  [{:keys [blog-prefix posts-per-page blocks-per-preview] :as params} posts]
+  (when-not (empty? posts)
+    (let [previews (-> (create-previews posts-per-page blocks-per-preview posts)
+                       (create-preview-links blog-prefix)
+                       (assoc-in [1 :prev] (str blog-prefix "/index.html")))]
+      (create-folder (str blog-prefix "/p/"))
+      (doseq [{:keys [index posts prev next]} previews]
+        (spit (if (= 1 index) (str public blog-prefix "/index.html") (str public blog-prefix "/p/" index))
+              (render-file "/html/previews.html"
+                           (merge params
+                                  {:servlet-context (if (= 1 index) "" "../")
+                                   :posts           posts
+                                   :prev-uri        prev
+                                   :next-uri        next})))))))
+
 (defn compile-index
   "Compiles the index page into html and spits it out into the public folder"
   [{:keys [blog-prefix disqus?] :as params}]
@@ -270,8 +317,8 @@
   [config]
   (copy-resources
     (merge config
-           {:resources (for [mu (m/markups)
-                             t ["posts" "pages"]] (str (m/dir mu) "/" t))
+           {:resources     (for [mu (m/markups)
+                                 t ["posts" "pages"]] (str (m/dir mu) "/" t))
             :ignored-files (map #(re-pattern-from-ext (m/ext %)) (m/markups))})))
 
 (defn read-config
@@ -291,10 +338,10 @@
                      (update-in [:keep-files] (fnil seq []))
                      (update-in [:ignored-files] (fnil seq [#"^\.#.*" #".*\.swp$"])))]
       (merge
-       config
-       {:page-root (root-path :page-root config)
-        :post-root (root-path :post-root config)
-        :tag-root  (root-path :tag-root config)}))
+        config
+        {:page-root (root-path :page-root config)
+         :post-root (root-path :post-root config)
+         :tag-root  (root-path :tag-root config)}))
     (catch Exception _
       (throw (IllegalArgumentException. "Failed to parse config.edn")))))
 
@@ -302,7 +349,7 @@
   "Generates all the html and copies over resources specified in the config"
   []
   (println (green "compiling assets..."))
-  (let [{:keys [site-url blog-prefix rss-name recent-posts sass-src sass-dest keep-files ignored-files] :as config} (read-config)
+  (let [{:keys [site-url blog-prefix rss-name recent-posts sass-src sass-dest keep-files ignored-files previews?] :as config} (read-config)
         posts (add-prev-next (read-posts config))
         pages (add-prev-next (read-pages config))
         [navbar-pages sidebar-pages] (group-pages pages)
@@ -316,9 +363,10 @@
                        :sidebar-pages sidebar-pages
                        :archives-uri  (str blog-prefix "/archives.html")
                        :index-uri     (str blog-prefix "/index.html")
+                       :tags-uri      (str blog-prefix "/tags.html")
                        :rss-uri       (str blog-prefix "/" rss-name)
                        :site-url      (if (.endsWith site-url "/") (.substring site-url 0 (dec (count site-url))) site-url)
-                       :theme-path (str "file:resources/templates/themes/" (:theme config))})]
+                       :theme-path    (str "file:resources/templates/themes/" (:theme config))})]
 
     (set-custom-resource-path! (:theme-path params))
     (wipe-public-folder keep-files)
@@ -331,7 +379,9 @@
     (compile-posts params posts)
     (compile-tags params posts-by-tag)
     (compile-tags-page params)
-    (compile-index params)
+    (if previews?
+      (compile-preview-pages params posts)
+      (compile-index params))
     (compile-archives params posts)
     (println (blue "generating site map"))
     (spit (str public blog-prefix "/sitemap.xml") (sitemap/generate site-url ignored-files))
@@ -341,10 +391,10 @@
     (rss/make-filtered-channels public config posts-by-tag)
     (println (blue "compiling sass"))
     (sass/compile-sass->css!
-     {:src-sass sass-src
-      :dest-sass (str "../public" blog-prefix "/" sass-dest)
-      :ignored-files ignored-files
-      :base-dir "resources/templates/"})))
+      {:src-sass      sass-src
+       :dest-sass     (str "../public" blog-prefix "/" sass-dest)
+       :ignored-files ignored-files
+       :base-dir      "resources/templates/"})))
 
 (defn compile-assets-timed []
   (time
