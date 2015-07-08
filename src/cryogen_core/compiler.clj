@@ -272,8 +272,8 @@
   [{:keys [blog-prefix posts-per-page blocks-per-preview] :as params} posts]
   (when-not (empty? posts)
     (let [previews (-> (create-previews posts-per-page blocks-per-preview posts)
-                       (create-preview-links blog-prefix)
-                       (assoc-in [1 :prev] (str blog-prefix "/index.html")))]
+                       (create-preview-links blog-prefix))
+          previews (if (> (count previews) 1) (assoc-in previews [1 :prev] (str blog-prefix "/index.html")) previews)]
       (create-folder (str blog-prefix "/p/"))
       (doseq [{:keys [index posts prev next]} previews]
         (spit (if (= 1 index) (str public blog-prefix "/index.html") (str public blog-prefix "/p/" index))
