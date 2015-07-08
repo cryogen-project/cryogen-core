@@ -230,6 +230,13 @@
                                    :posts           posts
                                    :uri             uri})))))))
 
+(defn compile-tags-page [{:keys [blog-prefix] :as params}]
+  (println (blue "compiling tags page"))
+  (spit (str public blog-prefix "/tags.html")
+        (render-file "/html/tags.html"
+                     (merge params
+                            {:uri (str blog-prefix "/tags.html")}))))
+
 (defn compile-index
   "Compiles the index page into html and spits it out into the public folder"
   [{:keys [blog-prefix disqus?] :as params}]
@@ -323,6 +330,7 @@
     (compile-pages params pages)
     (compile-posts params posts)
     (compile-tags params posts-by-tag)
+    (compile-tags-page params)
     (compile-index params)
     (compile-archives params posts)
     (println (blue "generating site map"))
