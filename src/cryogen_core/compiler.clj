@@ -14,7 +14,8 @@
              [get-resource find-assets create-folder wipe-public-folder copy-resources
               copy-resources-from-theme]]
             [cryogen-core.sitemap :as sitemap]
-            [cryogen-core.rss :as rss]))
+            [cryogen-core.rss :as rss])
+  (:import java.util.Locale))
 
 (cache-off!)
 
@@ -103,7 +104,7 @@
     (merge
       (merge-meta-and-content file-name page-meta content)
       (let [date (parse-post-date file-name (:post-date-format config))
-            archive-fmt (java.text.SimpleDateFormat. "yyyy MMMM" (java.util.Locale. "en"))
+            archive-fmt (java.text.SimpleDateFormat. "yyyy MMMM" (Locale/getDefault))
             formatted-group (.format archive-fmt date)]
         {:date                    date
          :formatted-archive-group formatted-group
