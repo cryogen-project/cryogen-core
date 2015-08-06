@@ -103,7 +103,9 @@
   (let [{:keys [file-name page-meta content]} (page-content page config markup)]
     (merge
       (merge-meta-and-content file-name page-meta content)
-      (let [date (parse-post-date file-name (:post-date-format config))
+      (let [date (if (:date page-meta)
+                   (.parse (java.text.SimpleDateFormat. (:post-date-format config)) (:date page-meta))
+                   (parse-post-date file-name (:post-date-format config)))
             archive-fmt (java.text.SimpleDateFormat. "yyyy MMMM" (Locale/getDefault))
             formatted-group (.format archive-fmt date)]
         {:date                    date
