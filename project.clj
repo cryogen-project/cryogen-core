@@ -11,6 +11,6 @@
                            [clj-text-decoration "0.0.3"]
                            [io.aviso/pretty "0.1.18"]
                            [hiccup "1.0.5"]
-                           [selmer "0.8.5"]
+                           [selmer "0.8.8"]
                            [pandect "0.5.2"]
                            [clj-tagsoup "0.3.0" :exclusions [org.clojure/clojure]]])
