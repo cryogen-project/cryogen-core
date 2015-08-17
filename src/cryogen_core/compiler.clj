@@ -198,7 +198,8 @@
       (spit (str public uri)
             (render-file (str "/html/" (:layout page))
                          (merge params
-                                {:servlet-context "../"
+                                {:active-page     "pages"
+                                 :servlet-context "../"
                                  :page            page
                                  :uri             uri}))))))
 
@@ -213,7 +214,8 @@
       (spit (str public (:uri post))
             (render-file (str "/html/" (:layout post))
                          (merge params
-                                {:servlet-context  "../"
+                                {:active-page      "posts"
+                                 :servlet-context  "../"
                                  :post             post
                                  :disqus-shortname disqus-shortname
                                  :uri              (:uri post)}))))))
@@ -230,7 +232,8 @@
         (spit (str public uri)
               (render-file "/html/tag.html"
                            (merge params
-                                  {:servlet-context "../"
+                                  {:active-page     "tags"
+                                   :servlet-context "../"
                                    :name            name
                                    :posts           posts
                                    :uri             uri})))))))
@@ -240,7 +243,8 @@
   (spit (str public blog-prefix "/tags.html")
         (render-file "/html/tags.html"
                      (merge params
-                            {:uri (str blog-prefix "/tags.html")}))))
+                            {:active-page "tags"
+                             :uri         (str blog-prefix "/tags.html")}))))
 
 (defn create-preview
   "Creates a single post preview"
@@ -282,7 +286,8 @@
         (spit (if (= 1 index) (str public blog-prefix "/index.html") (str public blog-prefix "/p/" index))
               (render-file "/html/previews.html"
                            (merge params
-                                  {:servlet-context (if (= 1 index) "" "../")
+                                  {:active-page     "preview"
+                                   :servlet-context (if (= 1 index) "" "../")
                                    :posts           posts
                                    :prev-uri        prev
                                    :next-uri        next})))))))
@@ -294,10 +299,11 @@
   (spit (str public blog-prefix "/index.html")
         (render-file "/html/home.html"
                      (merge params
-                            {:home    true
-                             :disqus? disqus?
-                             :post    (get-in params [:latest-posts 0])
-                             :uri     (str blog-prefix "/index.html")}))))
+                            {:active-page "home"
+                             :home        true
+                             :disqus?     disqus?
+                             :post        (get-in params [:latest-posts 0])
+                             :uri         (str blog-prefix "/index.html")}))))
 
 (defn compile-archives
   "Compiles the archives page into html and spits it out into the public folder"
@@ -306,9 +312,10 @@
   (spit (str public blog-prefix "/archives.html")
         (render-file "/html/archives.html"
                      (merge params
-                            {:archives true
-                             :groups   (group-for-archive posts)
-                             :uri      (str blog-prefix "/archives.html")}))))
+                            {:active-page "archives"
+                             :archives    true
+                             :groups      (group-for-archive posts)
+                             :uri         (str blog-prefix "/archives.html")}))))
 
 (defn tag-posts
   "Converts the tags in each post into links"
@@ -360,6 +367,7 @@
         posts (tag-posts posts config)
         params (merge config
                       {:title         (:site-title config)
+                       :active-page   "home"
                        :tags          (map (partial tag-info config) (keys posts-by-tag))
                        :latest-posts  (->> posts (take recent-posts) vec)
                        :navbar-pages  navbar-pages
