@@ -143,7 +143,7 @@
   "Adds the uri and title of a post to the list of posts under each of its tags"
   [tags post]
   (reduce (fn [tags tag]
-            (update-in tags [tag] (fnil conj []) (select-keys post [:uri :title :content :date])))
+            (update-in tags [tag] (fnil conj []) (select-keys post [:uri :title :content :date :enclosure])))
           tags (:tags post)))
 
 (defn group-by-tags
