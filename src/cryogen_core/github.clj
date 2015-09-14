@@ -25,7 +25,7 @@
                        (catch Exception e {:error (.getMessage e)}))]
     (when-not (:error git-resp)
       (if-let [git-src (json/parse-string git-resp)]
-        {:content (String. (Base64/decodeBase64 (get git-src "content")) "UTF-8")
+        {:content (String. ^bytes (Base64/decodeBase64 ^String (get git-src "content")) "UTF-8")
          :name (get git-src "name")
          :uri (get (get git-src "_links") "html")}))))
 

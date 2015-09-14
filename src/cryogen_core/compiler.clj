@@ -44,7 +44,7 @@
 
 (defn parse-post-date
   "Parses the post date from the post's file name and returns the corresponding java date object"
-  [file-name date-fmt]
+  [^String file-name date-fmt]
   (let [fmt (java.text.SimpleDateFormat. date-fmt)]
     (.parse fmt (.substring file-name 0 10))))
 
@@ -69,7 +69,7 @@
 (defn page-content
   "Returns a map with the given page's file-name, metadata and content parsed from
   the file with the given markup."
-  [page config markup]
+  [^java.io.File page config markup]
   (with-open [rdr (java.io.PushbackReader. (reader page))]
     (let [page-name (.getName page)
           file-name (s/replace page-name (re-pattern-from-ext (m/ext markup)) ".html")
@@ -359,7 +359,7 @@
   "Generates all the html and copies over resources specified in the config"
   []
   (println (green "compiling assets..."))
-  (let [{:keys [site-url blog-prefix rss-name recent-posts sass-src sass-dest keep-files ignored-files previews?] :as config} (read-config)
+  (let [{:keys [^String site-url blog-prefix rss-name recent-posts sass-src sass-dest keep-files ignored-files previews?] :as config} (read-config)
         posts (add-prev-next (read-posts config))
         pages (add-prev-next (read-pages config))
         [navbar-pages sidebar-pages] (group-pages pages)
