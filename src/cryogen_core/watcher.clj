@@ -8,7 +8,7 @@
   (->> path
        file
        file-seq
-       (filter #(not (.isDirectory %)))
+       (filter #(not (.isDirectory ^java.io.File %)))
        (filter (ignore ignored-files))))
 
 (defn checksums [path ignored-files]

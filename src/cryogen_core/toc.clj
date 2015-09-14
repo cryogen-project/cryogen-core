@@ -3,7 +3,7 @@
             [hiccup.core :as hiccup]))
 
 (def _h [:h1 :h2 :h3 :h4 :h5 :h6])
-(defn- compare_index [i1 i2] (- (.indexOf _h i2) (.indexOf _h i1)))
+(defn- compare_index [i1 i2] (- (.indexOf ^clojure.lang.APersistentVector _h i2) (.indexOf ^clojure.lang.APersistentVector _h i1)))
 
 (defn- get-headings
   "Turn a body of html content into a vector of elements whose tags are
@@ -41,7 +41,7 @@
                                                       (hiccup/html entry)) tag)))))
       (str acc "</ol>"))))
 
-(defn generate-toc [html]
+(defn generate-toc [^String html]
   (-> html
       (.getBytes "UTF-8")
       (java.io.ByteArrayInputStream.)

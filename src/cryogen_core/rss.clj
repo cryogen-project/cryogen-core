@@ -4,7 +4,7 @@
   (:import java.util.Date))
 
 
-(defn posts-to-items [site-url posts]
+(defn posts-to-items [^String site-url posts]
   (map
     (fn [{:keys [uri title content date enclosure]}]
       (let [link (str (if (.endsWith site-url "/") (apply str (butlast site-url)) site-url) uri)

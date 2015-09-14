@@ -17,7 +17,7 @@
   (-> resource io/resource io/file))
 
 (defn ignore [ignored-files]
-  (fn [file]
+  (fn [^java.io.File file]
     (let [name    (.getName file)
           matches (map #(re-find % name) ignored-files)]
       (not (some seq matches)))))
@@ -27,12 +27,12 @@
   extension (ext) ignoring any files that match the given (ignored-files).
   First make sure that the root directory exists, if yes: process as normal;
   if no, return empty vector."
-  [f ext ignored-files]
+  [f ^String ext ignored-files]
   (if-let [root (get-resource f)]
     (->> (get-resource f)
          file-seq
          (filter (ignore ignored-files))
-         (filter (fn [file] (-> file .getName (.endsWith ext)))))
+         (filter (fn [^java.io.File file] (-> file .getName (.endsWith ext)))))
     []))
 
 (defn create-folder [folder]
@@ -47,9 +47,9 @@
 
 (defn copy-dir [src target ignored-files]
   (fs/mkdirs target)
-  (let [filename-filter (apply reject-re-filter ignored-files)
+  (let [^java.io.FileFilter filename-filter (apply reject-re-filter ignored-files)
         files (.listFiles (io/file src) filename-filter)]
-    (doseq [f files]
+    (doseq [^java.io.File f files]
       (let [out (io/file target (.getName f))]
         (if (.isDirectory f)
           (copy-dir f out ignored-files)
