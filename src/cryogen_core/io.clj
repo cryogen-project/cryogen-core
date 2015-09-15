@@ -47,7 +47,7 @@
 
 (defn copy-dir [src target ignored-files]
   (fs/mkdirs target)
-  (let [^java.io.FileFilter filename-filter (apply reject-re-filter ignored-files)
+  (let [^java.io.FilenameFilter filename-filter (apply reject-re-filter ignored-files)
         files (.listFiles (io/file src) filename-filter)]
     (doseq [^java.io.File f files]
       (let [out (io/file target (.getName f))]
