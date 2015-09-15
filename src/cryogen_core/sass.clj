@@ -23,7 +23,7 @@
   "Given a Diretory, gets files, Filtered to those having scss or sass
   extention. Ignores files matching any ignored regexps."
   [base-dir dir ignored-files]
-  (let [^java.io.FileFilter filename-filter (match-re-filter #"(?i:s[ca]ss$)")]
+  (let [^java.io.FilenameFilter filename-filter (match-re-filter #"(?i:s[ca]ss$)")]
     (->> (.listFiles (io/file base-dir dir) filename-filter)
          (filter #(not (.isDirectory ^java.io.File %)))
          (filter (ignore ignored-files))
