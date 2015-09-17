@@ -246,11 +246,17 @@
                             {:active-page "tags"
                              :uri         (str blog-prefix "/tags.html")}))))
 
+(defn content-until-more-marker
+  [^String content]
+  (let [index (.indexOf content "<!--more-->")]
+    (if (pos? index)
+      (subs content 0 index))))
+
 (defn create-preview
   "Creates a single post preview"
   [blocks-per-preview post]
   (merge (select-keys post [:title :author :date :uri])
-         {:content (or (re-find #".+?(?=<!--more-->)" (:content post))
+         {:content (or (content-until-more-marker (:content post))
                        (->> ((tagsoup/parse-string (:content post)) 2)
                             (drop 2)
                             (take blocks-per-preview)
