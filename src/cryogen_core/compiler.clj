@@ -255,7 +255,7 @@
 (defn create-preview
   "Creates a single post preview"
   [blocks-per-preview post]
-  (merge (select-keys post [:title :author :date :uri])
+  (merge post
          {:content (or (content-until-more-marker (:content post))
                        (->> ((tagsoup/parse-string (:content post)) 2)
                             (drop 2)
