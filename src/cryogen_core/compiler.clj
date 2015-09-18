@@ -266,7 +266,7 @@
   "Returns a sequence of vectors, each containing a set of post previews"
   [posts-per-page blocks-per-preview posts]
   (->> posts
-       (reduce (fn [v post] (conj v (create-preview blocks-per-preview post))) [])
+       (map #(create-preview blocks-per-preview %))
        (partition-all posts-per-page)
        (map-indexed (fn [i v] {:index (inc i) :posts v}))))
 
