@@ -12,7 +12,5 @@
 
 (defn load-plugins []
   (let [plugins (.getResources (ClassLoader/getSystemClassLoader) "plugin.edn")]
-    (loop []
-      (load-plugin (. ^java.net.URL (. plugins nextElement) openStream))
-      (when (.hasMoreElements plugins)
-        (recur)))))
+    (doseq [plugin (enumeration-seq plugins)]
+      (load-plugin (. ^java.net.URL plugin openStream)))))
