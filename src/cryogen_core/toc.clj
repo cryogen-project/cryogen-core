@@ -49,6 +49,13 @@
           ntoc
           (recur tail ntoc depth))))))
 
+(defn compact [[t1 & [[t2 & s2] & s1 :as a]]]
+  (if (empty? s1)
+    (if (= :ol t1 t2) 
+      (compact (into [t2] s2))
+      (into [t1] a))
+    (into [t1] (map compact a))))
+
 (defn generate-toc [html]
   (-> html
       (.getBytes "UTF-8")
@@ -57,4 +64,5 @@
       :content
       (get-headings)
       (build-toc)
+      (compact)
       (hiccup/html)))
