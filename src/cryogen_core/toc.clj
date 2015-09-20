@@ -2,6 +2,8 @@
   (:require [crouton.html :as html]
             [hiccup.core :as hiccup]))
 
+(def _h [:h1 :h2 :h3 :h4 :h5 :h6])
+
 (defn- get-headings
   "Turn a body of html content into a vector of elements whose tags are
   headings."
@@ -33,20 +35,19 @@
   (let [actual (filterv #(not (nil? (:anchor %))) (map parse (reverse hs))) ;from last to first
         tags (vec (sort (distinct (map :tag actual))))] ;expecting only h1..h6 tags 
     (loop [[head & tail] actual toc [:ol.contents ] _prev 0]
-      (let [depth (.indexOf levels (:tag head))
+      (let [depth (.indexOf tags (:tag head))
             entry [:li [:a {:href (str "#" (head :anchor))} (head :title)]]
             laddr (repeat (min depth _prev) 1)       ;cannot dig more than previous entry level
             wrap (loop [cnt (max 0 (- depth _prev))  ;add more :ol around entry if we need
                            acc entry] 
                       (if (= 0 cnt) acc (recur (dec cnt) (conj [:ol] acc))))
-            add-h #(into [:ol hood] (rest %))        ;add new entry before others
+            add-h #(into [:ol wrap] (rest %))        ;add new entry before others
             ntoc (if (empty? laddr)                  ;on necessary level
                     (add-h toc)
                     (update-in toc laddr add-h))] 
         (if (empty? tail) 
           ntoc
           (recur tail ntoc depth))))))
-
 
 (defn generate-toc [html]
   (-> html
