@@ -1,7 +1,7 @@
 (ns cryogen-core.watcher
   (:require [clojure.java.io :refer [file]]
             [cryogen-core.io :refer [ignore]]
-            [pandect.core :refer [md5]]
+            [pandect.algo.md5 :refer [md5]]
             [clojure.set :as set]))
 
 (defn get-assets [path ignored-files]
