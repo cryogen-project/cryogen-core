@@ -2,6 +2,7 @@
   (:require [clojure.java.io :refer [file]]
             [cryogen-core.io :refer [ignore]]
             [pandect.algo.md5 :refer [md5]]
+            [juxt.dirwatch :refer [watch-dir]]
             [clojure.set :as set]))
 
 (defn get-assets [path ignored-files]
@@ -21,15 +22,13 @@
     (when-some [changes (set/difference new-sum-set old-sum-set)]
       (vals (select-keys new-sums changes)))))
 
-(defn watch-assets [root ignored-files action]
-  (loop [sums (checksums root ignored-files)]
-    (Thread/sleep 300)
-    (let [new-sums (checksums root ignored-files)]
-      (when (find-changes sums new-sums)
-        (action))
-      (recur new-sums))))
+(defn watch-assets [sums root ignored-files action]
+  (let [new-sums (checksums root ignored-files)]
+    (when (find-changes @sums new-sums)
+      (action)
+      (reset! sums new-sums))))
 
 (defn start-watcher! [root ignored-files action]
-  (doto (Thread. #(watch-assets root ignored-files action))
-    (.setDaemon true)
-    (.start)))
+  (let [sums (atom (checksums root ignored-files))]
+    (watch-dir (fn [_] (watch-assets sums root ignored-files action))
+               (file root))))
