@@ -28,18 +28,23 @@
   In both cases above, the anchor reference becomes \"#reference\" and the
   anchor text is \"Reference Title\"."
   [headings]
-  (loop [items headings acc nil _last nil]
+  (loop [items headings acc nil _last nil _max (last _h) _first nil]
     (if-let [{tag :tag {id :id} :attrs [{{name :name} :attrs} title :as htext] :content} (first items)]
       (let [anchor (or id name)]
         (if (nil? anchor)
-          (recur (rest items) acc nil)
+          (recur (rest items) acc _last _max _first)
           (let [entry [:li [:a {:href (str "#" anchor)} (or title (first htext))]]
-                jump (compare_index _last tag)]
-            (cond (> jump 0) (recur (rest items) (str acc "<ol>" (hiccup/html entry)) tag)
-                  (= jump 0) (recur (rest items) (str acc (hiccup/html entry)) tag)
+                jump (if (nil? _first) 0 (compare_index _last tag))
+                m (if (pos? (compare_index tag _max)) tag _max)
+                f (if (nil? _first) tag _first)]
+            (cond (> jump 0) (recur (rest items) (str acc (apply str (repeat jump "<ol>"))
+                                                      (hiccup/html entry)) tag m f)
+                  (= jump 0) (recur (rest items) (str acc (hiccup/html entry)) tag m f)
                   (< jump 0) (recur (rest items) (str acc (apply str (repeat (* -1 jump) "</ol>"))
-                                                      (hiccup/html entry)) tag)))))
-      (str acc "</ol>"))))
+                                                      (hiccup/html entry)) tag m f)))))
+      (str (apply str (repeat (inc (compare_index _max _first)) "<ol>"))
+           acc 
+           (apply str (repeat (inc (compare_index _max _last)) "</ol>"))))))
 
 (defn generate-toc [^String html]
   (-> html
