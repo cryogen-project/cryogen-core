@@ -86,7 +86,8 @@
     (update-in page-meta [:layout] #(str (name %) ".html"))
     {:file-name file-name
      :content   content
-     :toc       (if (:toc page-meta) (generate-toc content))}))
+     :toc       (if-let [toc (:toc page-meta)]
+                  (generate-toc content :list-type toc))}))
 
 (defn parse-page
   "Parses a page/post and returns a map of the content, uri, date etc."
