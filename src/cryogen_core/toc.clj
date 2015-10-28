@@ -54,7 +54,7 @@
   contents, while :ul will result in an unordered list. The default is an
   ordered list."
   (let [li-tags (list-type _list-types)
-        top-tag (li-tags -> first (subs 1 3))]
+        top-tag (-> li-tags first (subs 1 3))]
     (-> html
         (.getBytes "UTF-8")
         (java.io.ByteArrayInputStream.)
@@ -63,4 +63,4 @@
         (get-headings)
         (make-links li-tags)
         (clojure.string/replace-first
-          (re-pattern top-tag) (str top-tag "class=\"contents\"")))))
+          (re-pattern top-tag) (str top-tag " class=\"contents\"")))))
