@@ -290,7 +290,7 @@
           previews (if (> (count previews) 1) (assoc-in previews [1 :prev] (str blog-prefix "/index.html")) previews)]
       (create-folder (str blog-prefix "/p/"))
       (doseq [{:keys [index posts prev next]} previews]
-        (spit (if (= 1 index) (str public blog-prefix "/index.html") (str public blog-prefix "/p/" index))
+        (spit (if (= 1 index) (str public blog-prefix "/index.html") (str public blog-prefix "/p/" index ".html"))
               (render-file "/html/previews.html"
                            (merge params
                                   {:active-page     "preview"
