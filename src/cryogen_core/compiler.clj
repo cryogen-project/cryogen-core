@@ -277,8 +277,8 @@
   [previews blog-prefix]
   (mapv (fn [[prev target next]]
           (merge target
-                 {:prev (if prev (str blog-prefix "/p/" (:index prev)) nil)
-                  :next (if next (str blog-prefix "/p/" (:index next)) nil)}))
+                 {:prev (if prev (str blog-prefix "/p/" (:index prev) ".html") nil)
+                  :next (if next (str blog-prefix "/p/" (:index next) ".html") nil)}))
         (partition 3 1 (flatten [nil previews nil]))))
 
 (defn compile-preview-pages
