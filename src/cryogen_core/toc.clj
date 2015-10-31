@@ -3,6 +3,7 @@
             [hiccup.core :as hiccup]))
 
 (def _h [:h1 :h2 :h3 :h4 :h5 :h6])
+
 (defn- compare_index [i1 i2] (- (.indexOf ^clojure.lang.APersistentVector _h i2) (.indexOf ^clojure.lang.APersistentVector _h i1)))
 
 (defn- get-headings
@@ -17,7 +18,6 @@
           (into headings more-headings)
           headings)))
     [] content))
-
 
 (defn make-links
   "Create a table of contents from the given headings. This function will look
@@ -43,8 +43,8 @@
                                                       (hiccup/html entry)) tag)))))
       (str acc li-close)))))
 
-
 (def _list-types {true ["<ol>" "</ol>"] :ol ["<ol>" "</ol>"] :ul ["<ul>" "</ul>"]})
+
 (defn generate-toc [^String html & {list-type :list-type :or {list-type true}}]
   "Reads an HTML string and parses it for headers, then returns a list of links
   to them.
@@ -53,7 +53,7 @@
   :ol and true will result in an ordered list being generated for the table of
   contents, while :ul will result in an unordered list. The default is an
   ordered list."
-  (let [li-tags (list-type _list-types)
+  (let [li-tags (_list-types list-type)
         top-tag (-> li-tags first (subs 1 3))]
     (-> html
         (.getBytes "UTF-8")
