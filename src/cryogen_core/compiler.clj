@@ -32,7 +32,7 @@
   [config k]
   (if-let [uri (k config)]
     (str "/" uri "/")
-    (root-path ((s/replace k #"-uri^" "")))))
+    (root-path config (keyword (s/replace k #"-uri^" "")))))
 
 (defn re-pattern-from-ext
   "Creates a properly quoted regex pattern for the given file extension"
