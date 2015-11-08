@@ -1,4 +1,5 @@
 (ns cryogen-core.markup
+  (:require [clojure.string :as s])
   (:import java.util.Collections))
 
 (defonce markup-registry (atom []))
@@ -16,7 +17,8 @@
 
   ex. <img src='/img/cryogen.png'/> becomes <img src='/blog/img/cryogen.png'/>"
   [blog-prefix text]
-  (clojure.string/replace text #"href=.?/|src=.?/" #(str (subs % 0 (dec (count %))) blog-prefix "/")))
+  (if-not (s/blank? blog-prefix)
+    (clojure.string/replace text #"href=.?/|src=.?/" #(str (subs % 0 (dec (count %))) "/" blog-prefix "/"))))
 
 (defn markups
   "Return a vector of Markup implementations. This is the primary entry point
