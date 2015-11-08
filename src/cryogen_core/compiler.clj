@@ -27,6 +27,13 @@
   (if-let [root (k config)]
     (str "/" root "/") "/"))
 
+(defn root-uri
+  "Creates the uri for posts, tags and pages. Returns root-path by default"
+  [config k]
+  (if-let [uri (k config)]
+    (str "/" uri "/")
+    (root-path ((s/replace k #"-uri^" "")))))
+
 (defn re-pattern-from-ext
   "Creates a properly quoted regex pattern for the given file extension"
   [ext]
