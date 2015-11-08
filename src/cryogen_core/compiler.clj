@@ -57,13 +57,13 @@
 
 (defn post-uri
   "Creates a post uri from the post file name"
-  [file-name {:keys [blog-prefix post-root]} mu]
-  (str blog-prefix post-root (s/replace file-name (re-pattern-from-ext (m/ext mu)) ".html")))
+  [file-name {:keys [blog-prefix post-root-uri]} mu]
+  (str blog-prefix post-root-uri (s/replace file-name (re-pattern-from-ext (m/ext mu)) ".html")))
 
 (defn page-uri
   "Creates a page uri from the page file name"
-  [page-name {:keys [blog-prefix page-root]} mu]
-  (str blog-prefix page-root (s/replace page-name (re-pattern-from-ext (m/ext mu)) ".html")))
+  [page-name {:keys [blog-prefix page-root-uri]} mu]
+  (str blog-prefix page-root-uri (s/replace page-name (re-pattern-from-ext (m/ext mu)) ".html")))
 
 (defn read-page-meta
   "Returns the clojure map from the top of a markdown page/post"
@@ -174,9 +174,9 @@
 
 (defn tag-info
   "Returns a map containing the name and uri of the specified tag"
-  [{:keys [blog-prefix tag-root]} tag]
+  [{:keys [blog-prefix tag-root-uri]} tag]
   {:name (name tag)
-   :uri  (str blog-prefix tag-root (name tag) ".html")})
+   :uri  (str blog-prefix tag-root-uri (name tag) ".html")})
 
 (defn add-prev-next
   "Adds a :prev and :next key to the page/post data containing the title and uri of the prev/next
@@ -197,10 +197,10 @@
 
 (defn compile-pages
   "Compiles all the pages into html and spits them out into the public folder"
-  [{:keys [blog-prefix page-root] :as params} pages]
+  [{:keys [blog-prefix page-root-uri] :as params} pages]
   (when-not (empty? pages)
     (println (blue "compiling pages"))
-    (create-folder (str blog-prefix page-root))
+    (create-folder (str blog-prefix page-root-uri))
     (doseq [{:keys [uri] :as page} pages]
       (println "\t-->" (cyan uri))
       (spit (str public uri)
@@ -213,10 +213,10 @@
 
 (defn compile-posts
   "Compiles all the posts into html and spits them out into the public folder"
-  [{:keys [blog-prefix post-root disqus-shortname] :as params} posts]
+  [{:keys [blog-prefix post-root-uri disqus-shortname] :as params} posts]
   (when-not (empty? posts)
     (println (blue "compiling posts"))
-    (create-folder (str blog-prefix post-root))
+    (create-folder (str blog-prefix post-root-uri))
     (doseq [post posts]
       (println "\t-->" (cyan (:uri post)))
       (spit (str public (:uri post))
@@ -230,10 +230,10 @@
 
 (defn compile-tags
   "Compiles all the tag pages into html and spits them out into the public folder"
-  [{:keys [blog-prefix tag-root] :as params} posts-by-tag]
+  [{:keys [blog-prefix tag-root-uri] :as params} posts-by-tag]
   (when-not (empty? posts-by-tag)
     (println (blue "compiling tags"))
-    (create-folder (str blog-prefix tag-root))
+    (create-folder (str blog-prefix tag-root-uri))
     (doseq [[tag posts] posts-by-tag]
       (let [{:keys [name uri]} (tag-info params tag)]
         (println "\t-->" (cyan uri))
