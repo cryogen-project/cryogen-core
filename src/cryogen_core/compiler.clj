@@ -365,7 +365,10 @@
         config
         {:page-root (root-path :page-root config)
          :post-root (root-path :post-root config)
-         :tag-root  (root-path :tag-root config)}))
+         :tag-root  (root-path :tag-root config)
+         :page-root-uri (root-uri :page-root-uri config)
+         :post-root-uri (root-uri :post-root-uri config)
+         :tag-root-uri (root-uri :tag-root-uri congig)}))
     (catch Exception _
       (throw (IllegalArgumentException. "Failed to parse config.edn")))))
 
