@@ -23,7 +23,7 @@
 
 (defn root-path
   "Creates the root path for posts, tags and pages"
-  [config k]
+  [k config]
   (if-let [root (k config)]
     (str "/" root "/") "/"))
 
