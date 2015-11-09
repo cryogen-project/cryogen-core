@@ -99,7 +99,8 @@
   contents, while :ul will result in an unordered list. The default is an
   ordered list."
   [^String html & {:keys [list-type] :or {list-type :ol}}]
-  (-> html
+  (let [list-type (if (true? list-type) :ol list-type)]
+    (-> html
     (.getBytes "UTF-8")
     (java.io.ByteArrayInputStream.)
     (html/parse)
@@ -107,4 +108,4 @@
     (get-headings)
     (build-toc-tree)
     (build-toc list-type)
-    (hiccup/html)))
+    (hiccup/html))))
