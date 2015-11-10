@@ -93,3 +93,17 @@
                   "but outer headers cannot be less indented "
                   "than the original header."]))
     ))
+
+
+(deftest test-generate-toc
+  (let [htmlString "<div><h2><a name=\"test\"></a>Test</h2></div>"]
+    (is (= "<ol class=\"content\"><li><a href=\"#test\">Test</a></li></ol>"
+               (generate-toc htmlString)))
+    (is (= "<ol class=\"content\"><li><a href=\"#test\">Test</a></li></ol>"
+               (generate-toc htmlString :list-type true)))
+    (is (= "<ol class=\"content\"><li><a href=\"#test\">Test</a></li></ol>"
+               (generate-toc htmlString :list-type :ol)))
+    (is (= "<ul class=\"content\"><li><a href=\"#test\">Test</a></li></ul>"
+               (generate-toc htmlString :list-type :ul)))))
+
+
