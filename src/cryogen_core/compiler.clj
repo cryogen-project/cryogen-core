@@ -123,7 +123,8 @@
          (fn [mu]
            (->>
              (find-posts config mu)
-             (pmap #(parse-post % config mu))))
+             (pmap #(parse-post % config mu))
+             (remove #(= (:draft? %) true))))
          (m/markups))
        (sort-by :date)
        reverse))
