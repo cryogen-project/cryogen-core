@@ -14,11 +14,11 @@
 
 (defn rewrite-hrefs
   "Injects the blog prefix in front of any local links
-
-  ex. <img src='/img/cryogen.png'/> becomes <img src='/blog/img/cryogen.png'/>"
+    ex. <img src='/img/cryogen.png'/> becomes <img src='/blog/img/cryogen.png'/>"
   [blog-prefix text]
   (if-not (s/blank? blog-prefix)
-    (clojure.string/replace text #"href=.?/|src=.?/" #(str (subs % 0 (dec (count %))) "/" blog-prefix "/"))))
+
+    (clojure.string/replace text #"href=.?/|src=.?/" #(str (subs % 0 (dec (count %))) blog-prefix "/"))))
 
 (defn markups
   "Return a vector of Markup implementations. This is the primary entry point
