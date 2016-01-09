@@ -20,7 +20,7 @@
 (cache-off!)
 
 (defn root-uri
-  "Creates the uri for posts, tags and pages. Returns root-path by default"
+  "Creates the uri for posts and pages. Returns root-path by default"
   [k config]
   (if-let [uri (k config)]
     uri
@@ -349,7 +349,7 @@
                      (update-in [:blog-prefix] (fnil str ""))
                      (update-in [:page-root] (fnil str ""))
                      (update-in [:post-root] (fnil str ""))
-                     (update-in [:tag-root] (fnil str ""))
+                     (update-in [:tag-root-uri] (fnil str ""))
                      (update-in [:rss-name] (fnil str "rss.xml"))
                      (update-in [:rss-filters] (fnil seq []))
                      (update-in [:sass-src] (fnil str "css"))
@@ -360,8 +360,7 @@
       (merge
         config
         {:page-root-uri (root-uri :page-root-uri config)
-         :post-root-uri (root-uri :post-root-uri config)
-         :tag-root-uri (root-uri :tag-root-uri config)}))
+         :post-root-uri (root-uri :post-root-uri config)}))
     (catch Exception _
       (throw (IllegalArgumentException. "Failed to parse config.edn")))))
 
