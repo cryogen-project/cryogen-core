@@ -1,4 +1,4 @@
-(defproject cryogen-core "0.1.29"
+(defproject cryogen-core "0.1.30"
             :description "Cryogen's compiler"
             :url "https://github.com/cryogen-project/cryogen-core"
             :license {:name "Eclipse Public License"
@@ -9,8 +9,8 @@
                            [crouton "0.1.2"]
                            [cheshire "5.5.0"]
                            [clj-text-decoration "0.0.3"]
-                           [io.aviso/pretty "0.1.20"]
+                           [io.aviso/pretty "0.1.21"]
                            [hiccup "1.0.5"]
-                           [selmer "0.9.8"]
+                           [selmer "0.9.9"]
                            [pandect "0.5.4"]
                            [clj-tagsoup "0.3.0" :exclusions [org.clojure/clojure]]])
