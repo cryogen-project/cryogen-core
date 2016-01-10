@@ -16,8 +16,8 @@
   "Injects the blog prefix in front of any local links
     ex. <img src='/img/cryogen.png'/> becomes <img src='/blog/img/cryogen.png'/>"
   [blog-prefix text]
-  (if-not (s/blank? blog-prefix)
-
+  (if (s/blank? blog-prefix)
+    text
     (clojure.string/replace text #"href=.?/|src=.?/" #(str (subs % 0 (dec (count %))) blog-prefix "/"))))
 
 (defn markups
