@@ -251,7 +251,10 @@
   [^String content]
   (let [index (.indexOf content "<!--more-->")]
     (if (pos? index)
-      (subs content 0 index))))
+      (let [s (subs content 0 index)]
+        (->> ((tagsoup/parse-string s) 2)
+             (drop 2)
+             hiccup/html)))))
 
 (defn create-preview
   "Creates a single post preview"
