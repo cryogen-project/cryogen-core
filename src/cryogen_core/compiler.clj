@@ -292,11 +292,13 @@
                        (create-preview-links blog-prefix))
           previews (if (> (count previews) 1) (assoc-in previews [1 :prev] (path "/" blog-prefix "index.html")) previews)]
       (create-folder (path "/" blog-prefix "p"))
-      (doseq [{:keys [index posts prev next]} previews]
-        (create-file (if (= 1 index) (path "/" blog-prefix "index.html") (path "/" blog-prefix "p" (str index ".html")))
+      (doseq [{:keys [index posts prev next]} previews
+              :let [index-page? (= 1 index)]]
+        (create-file (if index-page? (path "/" blog-prefix "index.html") (path "/" blog-prefix "p" (str index ".html")))
                      (render-file "/html/previews.html"
                                   (merge params
                                          {:active-page     "preview"
+                                          :home            (when index-page? true)
                                           :servlet-context (path "/" blog-prefix "/")
                                           :posts           posts
                                           :prev-uri        prev
