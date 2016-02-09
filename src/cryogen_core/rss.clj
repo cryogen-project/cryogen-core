@@ -7,13 +7,14 @@
 
 (defn posts-to-items [^String site-url posts]
   (map
-    (fn [{:keys [uri title content date enclosure]}]
+    (fn [{:keys [uri title content date enclosure author description]}]
       (let [link (str (if (.endsWith site-url "/") (apply str (butlast site-url)) site-url) uri)
             enclosure (if (nil? enclosure) "" enclosure)]
         {:guid        link
          :link        link
          :title       title
-         :description content
+         :description (or description content)
+         :author      author
          :enclosure   enclosure
          :pubDate     date}))
     posts))
