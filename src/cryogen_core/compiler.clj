@@ -165,6 +165,17 @@
        (sort-by :parsed-group)
        reverse))
 
+(defn group-for-author
+  "Groups the posts by author. If no post author if found defaults `default-author`."
+  [posts default-author]
+  (->> posts
+       (map #(select-keys % [:title :uri :date :formatted-archive-group :parsed-archive-group :author]))
+       (map #(update % :author (fn [author] (or author default-author))))
+       (group-by :author)
+       (map (fn [[author posts]]
+              {:author author
+               :posts  posts}))))
+
 (defn tag-info
   "Returns a map containing the name and uri of the specified tag"
   [{:keys [blog-prefix tag-root-uri]} tag]
@@ -329,6 +340,23 @@
                              :groups      (group-for-archive posts)
                              :uri         (path "/" blog-prefix "/archives.html")}))))
 
+(defn compile-authors
+  "For each author, creates a page with filtered posts."
+  [{:keys [blog-prefix author-root-uri author] :as params} posts]
+  (println (blue "compiling authors"))
+  (create-folder (path "/" blog-prefix  author-root-uri))
+  ;; if the post author is empty defaults to config's :author
+  (doseq [{:keys [author posts]} (group-for-author posts author)]
+    (let [uri (path "/" blog-prefix author-root-uri (str author ".html"))]
+      (println "\t-->" (cyan uri))
+      (create-file uri
+                   (render-file "/html/author.html"
+                                (merge params
+                                       {:author          author
+                                        :groups          (group-for-archive posts)
+                                        :servlet-context (path "/" blog-prefix "/")
+                                        :uri             uri}))))))
+
 (defn tag-posts
   "Converts the tags in each post into links"
   [posts config]
@@ -373,7 +401,7 @@
   "Generates all the html and copies over resources specified in the config"
   []
   (println (green "compiling assets..."))
-  (let [{:keys [^String site-url blog-prefix rss-name recent-posts sass-src sass-dest keep-files ignored-files previews?] :as config} (read-config)
+  (let [{:keys [^String site-url blog-prefix rss-name recent-posts sass-src sass-dest keep-files ignored-files previews? author-root-uri] :as config} (read-config)
         posts (add-prev-next (read-posts config))
         pages (add-prev-next (read-pages config))
         [navbar-pages sidebar-pages] (group-pages pages)
@@ -408,6 +436,9 @@
       (compile-preview-pages params posts)
       (compile-index params))
     (compile-archives params posts)
+    (when author-root-uri
+      (println (blue "generating authors views"))
+      (compile-authors params posts))
     (println (blue "generating site map"))
     (create-file (path "/" blog-prefix "sitemap.xml") (sitemap/generate site-url ignored-files))
     (println (blue "generating main rss"))
