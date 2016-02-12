@@ -11,7 +11,7 @@
             [cryogen-core.sass :as sass]
             [cryogen-core.markup :as m]
             [cryogen-core.io :refer
-             [get-resource find-assets create-folder create-file wipe-public-folder
+             [get-resource find-assets create-folder create-file-recursive create-file wipe-public-folder
               copy-resources copy-resources-from-theme path]]
             [cryogen-core.sitemap :as sitemap]
             [cryogen-core.rss :as rss])
@@ -47,15 +47,14 @@
   (let [fmt (java.text.SimpleDateFormat. date-fmt)]
     (.parse fmt (.substring file-name 0 10))))
 
-(defn post-uri
-  "Creates a post uri from the post file name"
-  [file-name {:keys [blog-prefix post-root-uri]} mu]
-  (path "/" blog-prefix post-root-uri (s/replace file-name (re-pattern-from-ext (m/ext mu)) ".html")))
-
 (defn page-uri
-  "Creates a page uri from the page file name"
-  [page-name {:keys [blog-prefix page-root-uri]} mu]
-  (path "/" blog-prefix page-root-uri (s/replace page-name (re-pattern-from-ext (m/ext mu)) ".html")))
+  "Creates a URI from file name. `uri-type` is any of the uri types specified in config, e.g., `:post-root-uri`."
+  ([file-name params]
+   (page-uri file-name nil params))
+  ([file-name uri-type {:keys [blog-prefix clean-urls?] :as params}]
+   (let [page-uri (params uri-type)
+         uri-end (if clean-urls? (s/replace file-name #"(index)?\.html" "/") file-name)]
+     (path "/" blog-prefix page-uri uri-end))))
 
 (defn read-page-meta
   "Returns the clojure map from the top of a markdown page/post"
@@ -94,7 +93,7 @@
   (let [{:keys [file-name page-meta content]} (page-content page config markup)]
     (merge
       (merge-meta-and-content file-name page-meta content)
-      {:uri        (page-uri file-name config markup)
+      {:uri        (page-uri file-name :page-root-uri config)
        :page-index (:page-index page-meta)})))
 
 (defn parse-post
@@ -111,7 +110,7 @@
         {:date                    date
          :formatted-archive-group formatted-group
          :parsed-archive-group    (.parse archive-fmt formatted-group)
-         :uri                     (post-uri file-name config markup)
+         :uri                     (page-uri file-name :post-root-uri config)
          :tags                    (set (:tags page-meta))}))))
 
 (defn read-posts
@@ -178,9 +177,9 @@
 
 (defn tag-info
   "Returns a map containing the name and uri of the specified tag"
-  [{:keys [blog-prefix tag-root-uri]} tag]
+  [config tag]
   {:name (name tag)
-   :uri  (path "/" blog-prefix tag-root-uri (str (name tag) ".html"))})
+   :uri  (page-uri (str (name tag) ".html") :tag-root-uri config)})
 
 (defn add-prev-next
   "Adds a :prev and :next key to the page/post data containing the title and uri of the prev/next
@@ -199,6 +198,13 @@
          sidebar-pages false} (group-by #(boolean (:navbar? %)) pages)]
     (map (partial sort-by :page-index) [navbar-pages sidebar-pages])))
 
+(defn write-html
+  "When `clean-urls?` is set, appends `/index.html` before spit; otherwise just spits."
+  [file-uri {:keys [clean-urls?]} data]
+  (if clean-urls?
+    (create-file-recursive (path file-uri "index.html") data)
+    (create-file file-uri data)))
+
 (defn compile-pages
   "Compiles all the pages into html and spits them out into the public folder"
   [{:keys [blog-prefix page-root-uri] :as params} pages]
@@ -207,13 +213,14 @@
     (create-folder (path "/" blog-prefix page-root-uri))
     (doseq [{:keys [uri] :as page} pages]
       (println "\t-->" (cyan uri))
-      (create-file uri
-                   (render-file (str "/html/" (:layout page))
-                                (merge params
-                                       {:active-page     "pages"
-                                        :servlet-context (path "/" blog-prefix "/")
-                                        :page            page
-                                        :uri             uri}))))))
+      (write-html uri
+                  params
+                  (render-file (str "/html/" (:layout page))
+                               (merge params
+                                      {:active-page     "pages"
+                                       :servlet-context (path "/" blog-prefix "/")
+                                       :page            page
+                                       :uri             uri}))))))
 
 (defn compile-posts
   "Compiles all the posts into html and spits them out into the public folder"
@@ -223,14 +230,15 @@
     (create-folder (path "/" blog-prefix post-root-uri))
     (doseq [post posts]
       (println "\t-->" (cyan (:uri post)))
-      (create-file (:uri post)
-                   (render-file (str "/html/" (:layout post))
-                                (merge params
-                                       {:active-page      "posts"
-                                        :servlet-context  (path "/" blog-prefix "/")
-                                        :post             post
-                                        :disqus-shortname disqus-shortname
-                                        :uri              (:uri post)}))))))
+      (write-html (:uri post)
+                  params
+                  (render-file (str "/html/" (:layout post))
+                               (merge params
+                                      {:active-page      "posts"
+                                       :servlet-context  (path "/" blog-prefix "/")
+                                       :post             post
+                                       :disqus-shortname disqus-shortname
+                                       :uri              (:uri post)}))))))
 
 (defn compile-tags
   "Compiles all the tag pages into html and spits them out into the public folder"
@@ -241,22 +249,25 @@
     (doseq [[tag posts] posts-by-tag]
       (let [{:keys [name uri]} (tag-info params tag)]
         (println "\t-->" (cyan uri))
-        (create-file uri
-                     (render-file "/html/tag.html"
-                                  (merge params
-                                         {:active-page     "tags"
-                                          :servlet-context (path "/" blog-prefix "/")
-                                          :name            name
-                                          :posts           posts
-                                          :uri             uri})))))))
+        (write-html uri
+                    params
+                    (render-file "/html/tag.html"
+                                 (merge params
+                                        {:active-page     "tags"
+                                         :servlet-context (path "/" blog-prefix "/")
+                                         :name            name
+                                         :posts           posts
+                                         :uri             uri})))))))
 
 (defn compile-tags-page [{:keys [blog-prefix] :as params}]
   (println (blue "compiling tags page"))
-  (create-file (path "/"  blog-prefix "tags.html")
-               (render-file "/html/tags.html"
-                            (merge params
-                                   {:active-page "tags"
-                                    :uri         (path "/" blog-prefix "tags.html")}))))
+  (let [uri (page-uri "tags.html" params)]
+    (write-html uri
+                params
+                (render-file "/html/tags.html"
+                             (merge params
+                                    {:active-page "tags"
+                                     :uri         uri})))))
 
 (defn content-until-more-marker
   [^String content]
@@ -288,11 +299,11 @@
 (defn create-preview-links
   "Turn each vector of previews into a map with :prev and :next keys that contain the uri of the
   prev/next preview page"
-  [previews blog-prefix]
+  [previews params]
   (mapv (fn [[prev target next]]
           (merge target
-                 {:prev (if prev (path "/" blog-prefix "p" (str (:index prev) ".html")) nil)
-                  :next (if next (path "/" blog-prefix "p" (str (:index next) ".html")) nil)}))
+                 {:prev (if prev (page-uri (path "p" (str (:index prev) ".html")) params) nil)
+                  :next (if next (page-uri (path "p" (str (:index next) ".html")) params) nil)}))
         (partition 3 1 (flatten [nil previews nil]))))
 
 (defn compile-preview-pages
@@ -300,45 +311,50 @@
   [{:keys [blog-prefix posts-per-page blocks-per-preview] :as params} posts]
   (when-not (empty? posts)
     (let [previews (-> (create-previews posts-per-page blocks-per-preview posts)
-                       (create-preview-links blog-prefix))
-          previews (if (> (count previews) 1) (assoc-in previews [1 :prev] (path "/" blog-prefix "index.html")) previews)]
+                       (create-preview-links params))
+          previews (if (> (count previews) 1) (assoc-in previews [1 :prev] (page-uri "index.html" params)) previews)]
       (create-folder (path "/" blog-prefix "p"))
       (doseq [{:keys [index posts prev next]} previews
               :let [index-page? (= 1 index)]]
-        (create-file (if index-page? (path "/" blog-prefix "index.html") (path "/" blog-prefix "p" (str index ".html")))
-                     (render-file "/html/previews.html"
-                                  (merge params
-                                         {:active-page     "preview"
-                                          :home            (when index-page? true)
-                                          :servlet-context (path "/" blog-prefix "/")
-                                          :posts           posts
-                                          :prev-uri        prev
-                                          :next-uri        next})))))))
+        (write-html (if index-page? (page-uri "index.html" params) (page-uri (path "p" (str index ".html")) params))
+                    params
+                    (render-file "/html/previews.html"
+                                 (merge params
+                                        {:active-page     "preview"
+                                         :home            (when index-page? true)
+                                         :servlet-context (path "/" blog-prefix "/")
+                                         :posts           posts
+                                         :prev-uri        prev
+                                         :next-uri        next})))))))
 
 (defn compile-index
   "Compiles the index page into html and spits it out into the public folder"
   [{:keys [blog-prefix disqus?] :as params}]
   (println (blue "compiling index"))
-  (create-file (path "/" blog-prefix "index.html")
-               (render-file "/html/home.html"
-                            (merge params
-                                   {:active-page "home"
-                                    :home        true
-                                    :disqus?     disqus?
-                                    :post        (get-in params [:latest-posts 0])
-                                    :uri         (path "/" blog-prefix "index.html")}))))
+  (let [uri (page-uri "index.html" params)]
+    (write-html uri
+                params
+                (render-file "/html/home.html"
+                             (merge params
+                                    {:active-page "home"
+                                     :home        true
+                                     :disqus?     disqus?
+                                     :post        (get-in params [:latest-posts 0])
+                                     :uri         uri})))))
 
 (defn compile-archives
   "Compiles the archives page into html and spits it out into the public folder"
   [{:keys [blog-prefix] :as params} posts]
   (println (blue "compiling archives"))
-  (create-file (path "/" blog-prefix "archives.html")
-        (render-file "/html/archives.html"
-                     (merge params
-                            {:active-page "archives"
-                             :archives    true
-                             :groups      (group-for-archive posts)
-                             :uri         (path "/" blog-prefix "/archives.html")}))))
+  (let [uri (page-uri "archives.html" params)]
+    (write-html uri
+                params
+                (render-file "/html/archives.html"
+                             (merge params
+                                    {:active-page "archives"
+                                     :archives    true
+                                     :groups      (group-for-archive posts)
+                                     :uri         uri})))))
 
 (defn compile-authors
   "For each author, creates a page with filtered posts."
@@ -347,15 +363,16 @@
   (create-folder (path "/" blog-prefix  author-root-uri))
   ;; if the post author is empty defaults to config's :author
   (doseq [{:keys [author posts]} (group-for-author posts author)]
-    (let [uri (path "/" blog-prefix author-root-uri (str author ".html"))]
+    (let [uri (page-uri (str author ".html") :author-root-uri params)]
       (println "\t-->" (cyan uri))
-      (create-file uri
-                   (render-file "/html/author.html"
-                                (merge params
-                                       {:author          author
-                                        :groups          (group-for-archive posts)
-                                        :servlet-context (path "/" blog-prefix "/")
-                                        :uri             uri}))))))
+      (write-html uri
+                  params
+                  (render-file "/html/author.html"
+                               (merge params
+                                      {:author          author
+                                       :groups          (group-for-archive posts)
+                                       :servlet-context (path "/" blog-prefix "/")
+                                       :uri             uri}))))))
 
 (defn tag-posts
   "Converts the tags in each post into links"
@@ -414,9 +431,9 @@
                        :latest-posts  (->> posts (take recent-posts) vec)
                        :navbar-pages  navbar-pages
                        :sidebar-pages sidebar-pages
-                       :archives-uri  (path "/" blog-prefix "archives.html")
-                       :index-uri     (path "/" blog-prefix "index.html")
-                       :tags-uri      (path "/" blog-prefix "tags.html")
+                       :archives-uri  (page-uri "archives.html" config)
+                       :index-uri     (page-uri "index.html" config)
+                       :tags-uri      (page-uri "tags.html" config)
                        :rss-uri       (path "/" blog-prefix rss-name)
                        :site-url      (if (.endsWith site-url "/") (.substring site-url 0 (dec (count site-url))) site-url)
                        :theme-path    (str "file:resources/templates/themes/" (:theme config))})]
