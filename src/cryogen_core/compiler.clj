@@ -267,6 +267,7 @@
                 (render-file "/html/tags.html"
                              (merge params
                                     {:active-page "tags"
+                                     :servlet-context (path "/" blog-prefix "/")
                                      :uri         uri})))))
 
 (defn content-until-more-marker
@@ -354,6 +355,7 @@
                                     {:active-page "archives"
                                      :archives    true
                                      :groups      (group-for-archive posts)
+                                     :servlet-context (path "/" blog-prefix "/")
                                      :uri         uri})))))
 
 (defn compile-authors
