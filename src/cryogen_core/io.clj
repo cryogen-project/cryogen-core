@@ -45,12 +45,16 @@
     []))
 
 (defn create-folder [folder]
-  (let [loc (io/file (str public folder))]
+  (let [loc (io/file (path public folder))]
     (when-not (.exists loc)
       (.mkdirs loc))))
 
 (defn create-file [file data]
-  (spit (str public file) data))
+  (spit (path public file) data))
+
+(defn create-file-recursive [file data]
+  (create-folder (.getParent (io/file file)))
+  (create-file file data))
 
 (defn wipe-public-folder [keep-files]
   (let [filenamefilter (reify java.io.FilenameFilter (accept [this _ filename] (not (some #{filename} keep-files))))]
