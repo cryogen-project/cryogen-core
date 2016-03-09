@@ -105,7 +105,7 @@
       (let [date (if (:date page-meta)
                    (.parse (java.text.SimpleDateFormat. (:post-date-format config)) (:date page-meta))
                    (parse-post-date file-name (:post-date-format config)))
-            archive-fmt (java.text.SimpleDateFormat. "yyyy MMMM" (Locale/getDefault))
+            archive-fmt (java.text.SimpleDateFormat. (get config :archive-group-format "yyyy MMMM") (Locale/getDefault))
             formatted-group (.format archive-fmt date)]
         {:date                    date
          :formatted-archive-group formatted-group
