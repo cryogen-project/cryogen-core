@@ -13,4 +13,5 @@
                            [hiccup "1.0.5"]
                            [selmer "1.0.0"]
                            [pandect "0.5.4"]
+                           [hawk "0.2.10"]
                            [clj-tagsoup "0.3.0" :exclusions [org.clojure/clojure]]])
