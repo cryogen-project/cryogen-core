@@ -330,7 +330,7 @@
 
 (defn compile-index
   "Compiles the index page into html and spits it out into the public folder"
-  [{:keys [blog-prefix disqus?] :as params}]
+  [{:keys [disqus?] :as params}]
   (println (blue "compiling index"))
   (let [uri (page-uri "index.html" params)]
     (write-html uri
