@@ -31,30 +31,15 @@
   [ext]
   (re-pattern (str (s/replace ext "." "\\.") "$")))
 
-(defn find-entries
-  "Returns a list of files under the templates directory according to the
-  implemented Markup protocol and specified root directory. It defaults to
-  looking under the implemented protocol's subdirectory, but fallsback to look
-  at the templates directory."
-  [root mu ignored-files]
-  (let [assets (find-assets (path "templates" (m/dir mu) root)
-                            (m/ext mu)
-                            ignored-files)]
-    (if (seq assets)
-      assets
-      (find-assets (path "templates" root)
-                   (m/ext mu)
-                   ignored-files))))
-
 (defn find-posts
-  "Returns a list of markdown files representing posts under the post root."
+  "Returns a list of markdown files representing posts under the post root in templates/md"
   [{:keys [post-root ignored-files]} mu]
-  (find-entries post-root mu ignored-files))
+  (find-assets (path "templates" (m/dir mu) post-root) (m/ext mu) ignored-files))
 
 (defn find-pages
-  "Returns a list of markdown files representing pages under the page root."
+  "Returns a list of markdown files representing pages under the page root in templates/md"
   [{:keys [page-root ignored-files]} mu]
-  (find-entries page-root mu ignored-files))
+  (find-assets (path "templates" (m/dir mu) page-root) (m/ext mu) ignored-files))
 
 (defn parse-post-date
   "Parses the post date from the post's file name and returns the corresponding java date object"
