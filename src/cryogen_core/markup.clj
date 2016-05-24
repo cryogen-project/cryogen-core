@@ -26,3 +26,13 @@
   Markups."
   []
   @markup-registry)
+
+(defn register-markup
+  "Add a Markup implementation to the registry."
+  [mu]
+  (swap! markup-registry conj mu))
+
+(defn clear-registry
+  "Reset the Markup registry."
+  []
+  (reset! markup-registry []))
