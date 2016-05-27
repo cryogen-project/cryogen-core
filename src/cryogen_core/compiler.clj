@@ -396,14 +396,26 @@
   [posts config]
   (map #(update-in % [:tags] (partial map (partial tag-info config))) posts))
 
+(defn- template-dir?
+  "Checks that the dir exists in the templates directory."
+  [dir]
+  (.isDirectory (file (str "resources/templates/" dir))))
+
+(defn- markup-entries [post-root page-root]
+  (let [entries (for [mu (m/markups)
+                      t (distinct [post-root page-root])]
+                  [(str (m/dir mu) "/" t) t])]
+    (apply concat entries)))
+
 (defn copy-resources-from-markup-folders
   "Copy resources from markup folders"
   [{:keys [post-root page-root] :as config}]
-  (copy-resources
-    (merge config
-           {:resources     (for [mu (m/markups)
-                                 t (distinct [post-root page-root])] (str (m/dir mu) "/" t))
-            :ignored-files (map #(re-pattern-from-ext (m/ext %)) (m/markups))})))
+  (let [folders (->> (markup-entries post-root page-root)
+                     (filter template-dir?))]
+    (copy-resources
+      (merge config
+             {:resources     folders
+              :ignored-files (map #(re-pattern-from-ext (m/ext %)) (m/markups))}))))
 
 (defn read-config
   "Reads the config file"
