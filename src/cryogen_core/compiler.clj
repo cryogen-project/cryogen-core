@@ -408,7 +408,7 @@
     (apply concat entries)))
 
 (defn copy-resources-from-markup-folders
-  "Copy resources from markup folders"
+  "Copy resources from markup folders. This does not copy the markup entries."
   [{:keys [post-root page-root] :as config}]
   (let [folders (->> (markup-entries post-root page-root)
                      (filter template-dir?))]
