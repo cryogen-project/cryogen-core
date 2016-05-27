@@ -100,6 +100,15 @@ and more content.
 
 (deftest test-copy-resources-from-markup-folders
   (reset-resources)
+  (testing "No pages or posts nothing to copy"
+    (copy-resources-from-markup-folders
+      {:post-root "pages"
+       :page-root "posts"
+       :blog-prefix "/blog"})
+    (is (not (.isDirectory (File. (str "resources/public/blog/pages")))))
+    (is (not (.isDirectory (File. (str "resources/public/blog/posts"))))))
+
+  (reset-resources)
   (doseq [mu [(markdown) (asciidoc)]]
     (testing (str "Test copy from markup folders (" (m/dir mu) ")")
       (let [dirs ["pages" "posts"]]
