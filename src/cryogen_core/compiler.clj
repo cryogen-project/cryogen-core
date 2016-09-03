@@ -454,7 +454,8 @@
         posts-by-tag (group-by-tags posts)
         posts (tag-posts posts config)
         params (merge config
-                      {:title         (:site-title config)
+                      {:today         (java.util.Date.)
+                       :title         (:site-title config)
                        :active-page   "home"
                        :tags          (map (partial tag-info config) (keys posts-by-tag))
                        :latest-posts  (->> posts (take recent-posts) vec)
