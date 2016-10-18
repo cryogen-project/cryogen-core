@@ -84,7 +84,8 @@
   the file with the given markup."
   [^java.io.File page config markup]
   (with-open [rdr (java.io.PushbackReader. (reader page))]
-    (let [page-name (.getName page)
+    (let [re-root (re-pattern (str "^.*?(" (:page-root config) "|" (:post-root config) ")/"))
+          page-name (s/replace (str page) re-root "")
           file-name (s/replace page-name (re-pattern-from-ext (m/ext markup)) ".html")
           page-meta (read-page-meta page-name rdr)
           content ((m/render-fn markup) rdr config)]
