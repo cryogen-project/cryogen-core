@@ -55,8 +55,12 @@
       (let [anchor (or id name)]
         (if (nil? anchor)
           (recur zp (rest items))
-          (recur (insert-toc-tree-entry
-                   zp {:tag tag :anchor anchor :text (or title (first htext))})
+          (recur (insert-toc-tree-entry zp
+                   {:tag tag
+                    :anchor anchor
+                    :text (or
+                            (if (string? title) title (-> title :content first))
+                            (first htext))})
                  (rest items))))
       (z/root zp))))
 
