@@ -498,7 +498,8 @@
       {:src-sass      sass-src
        :dest-sass     (path ".." "public" blog-prefix sass-dest)
        :ignored-files ignored-files
-       :base-dir      "resources/templates/"})))
+       :base-dir      "resources/templates/"})
+    (spit "tmp/compiler/timestamp" (str (System/currentTimeMillis)))))
 
 (defn compile-assets-timed []
   (time
