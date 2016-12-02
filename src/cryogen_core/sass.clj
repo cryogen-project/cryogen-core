@@ -57,7 +57,7 @@ the command. Shows you any problems it comes across when compiling. "
       ;; I found sass files,
       ;; If sass is installed
       (do
-        (println "Compiling Sass Files:" src-sass dest-sass)
+        (println "\t" (cyan src-sass) "-->" (cyan dest-sass))
         (let [result (compile-sass-file! opts)]
           (if (zero? (:exit result))
             ;; no problems in sass compilation
