@@ -15,9 +15,12 @@
   (= 0 (:exit (sh "sass" "--version"))))
 
 (defn compass-installed?
-   "Checks for the installation of Compass."
-   []
-   (= 0 (:exit (sh "compass" "--version"))))
+  "Checks for the installation of Compass."
+  []
+  (try
+    (= 0 (:exit (sh "compass" "--version")))
+    (catch java.io.IOException _
+      false)))
 
 (defn find-sass-files
   "Given a Diretory, gets files, Filtered to those having scss or sass
