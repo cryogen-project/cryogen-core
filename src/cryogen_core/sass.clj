@@ -40,10 +40,9 @@
            dest-sass
            base-dir]}]
   (shell/with-sh-dir base-dir
-    (sh "sass"
-        "--update"
-        (when (compass-installed?) "--compass")
-        (str src-sass ":" dest-sass))))
+    (if (compass-installed?)
+      (sh "sass" "--compass" "--update" (str src-sass ":" dest-sass))
+      (sh "sass" "--update" (str src-sass ":" dest-sass)))))
 
 (defn compile-sass->css!
   "Given a directory src-sass, looks for all sass files and compiles them into
