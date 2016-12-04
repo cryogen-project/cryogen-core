@@ -15,9 +15,12 @@
   (= 0 (:exit (sh "sass" "--version"))))
 
 (defn compass-installed?
-   "Checks for the installation of Compass."
-   []
-   (= 0 (:exit (sh "compass" "--version"))))
+  "Checks for the installation of Compass."
+  []
+  (try
+    (= 0 (:exit (sh "compass" "--version")))
+    (catch java.io.IOException _
+      false)))
 
 (defn find-sass-files
   "Given a Diretory, gets files, Filtered to those having scss or sass
@@ -37,10 +40,9 @@
            dest-sass
            base-dir]}]
   (shell/with-sh-dir base-dir
-    (sh "sass"
-        "--update"
-        (when (compass-installed?) "--compass")
-        (str src-sass ":" dest-sass))))
+    (if (compass-installed?)
+      (sh "sass" "--compass" "--update" (str src-sass ":" dest-sass))
+      (sh "sass" "--update" (str src-sass ":" dest-sass)))))
 
 (defn compile-sass->css!
   "Given a directory src-sass, looks for all sass files and compiles them into
@@ -55,7 +57,7 @@ the command. Shows you any problems it comes across when compiling. "
       ;; I found sass files,
       ;; If sass is installed
       (do
-        (println "Compiling Sass Files:" src-sass dest-sass)
+        (println "\t" (cyan src-sass) "-->" (cyan dest-sass))
         (let [result (compile-sass-file! opts)]
           (if (zero? (:exit result))
             ;; no problems in sass compilation
