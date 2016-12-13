@@ -141,7 +141,8 @@
              (remove #(= (:draft? %) true))))
          (m/markups))
        (sort-by :date)
-       reverse))
+       reverse
+       (drop-while #(and (:hide-future-posts? config) (.after (:date %) (:today config))))))
 
 (defn read-pages
   "Returns a sequence of maps representing the data from markdown files of pages.
