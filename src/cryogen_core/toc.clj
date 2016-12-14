@@ -1,9 +1,11 @@
 (ns cryogen-core.toc
-  (:require [crouton.html :as html]
+  (:require [clojure.zip :as z]
+            [crouton.html :as html]
             [hiccup.core :as hiccup]))
 
 (def _h [:h1 :h2 :h3 :h4 :h5 :h6])
-(defn- compare_index [i1 i2] (- (.indexOf _h i2) (.indexOf _h i1)))
+
+(defn- compare-index [i1 i2] (- (.indexOf ^clojure.lang.APersistentVector _h i2) (.indexOf ^clojure.lang.APersistentVector _h i1)))
 
 (defn- get-headings
   "Turn a body of html content into a vector of elements whose tags are
@@ -18,35 +20,96 @@
           headings)))
     [] content))
 
-(defn make-links
-  "Create a table of contents from the given headings. This function will look
-  for either:
-  (1) headings with a child anchor with a non-nil name attribute, e.g.
-      <h1><a name=\"reference\">Reference Title</a></h1>
-  or
-  (2) headings with an id attribute, e.g. <h1 id=\"reference\">Reference Title</h1>
-  In both cases above, the anchor reference becomes \"#reference\" and the
-  anchor text is \"Reference Title\"."
+(defn- zip-toc-tree-to-insertion-point
+  "Given a toc-tree zipper and a header level, navigate
+  the zipper to the appropriate parent of the level for that header
+  to be inserted and return the zipper."
+  [toctree h-tag]
+  (if-let [current-tag (-> toctree first :value :tag)]
+    (let [direction (compare-index h-tag current-tag)]
+      (cond (zero? direction) (z/up toctree)                  ; Tag belongs at current level
+            (neg? direction) toctree                         ; Tag belongs below this level
+            (pos? direction) (recur (z/up toctree) h-tag)))  ; Keep looking up
+    ; This level is the root list, return it
+    toctree))
+
+(defn- insert-toc-tree-entry
+  "Inserts a toc-tree (zipper) entry for the given entry at the appropriate place.
+  Obeys the invariant that the toc-tree (zipper) is always moved to the inserted loc."
+  [tree entry]
+  (let [{htag :tag} entry
+        tree (zip-toc-tree-to-insertion-point tree htag)]
+    (-> tree (z/append-child {:children [] :value entry}) z/down z/rightmost)))
+
+(defn- build-toc-tree
+  "Given a sequence of header nodes, build a toc tree using zippers
+  and return it."
   [headings]
-  (loop [items headings acc nil _last nil]
+  (loop [zp (z/zipper
+              map?
+              :children
+              (fn [node children] (assoc node :children (apply vector children)))
+              {:value :root :children []})
+         items headings]
     (if-let [{tag :tag {id :id} :attrs [{{name :name} :attrs} title :as htext] :content} (first items)]
       (let [anchor (or id name)]
         (if (nil? anchor)
-          (recur (rest items) acc nil)
-          (let [entry [:li [:a {:href (str "#" anchor)} (or title (first htext))]]
-                jump (compare_index _last tag)]
-            (cond (> jump 0) (recur (rest items) (str acc "<ol>" (hiccup/html entry)) tag)
-                  (= jump 0) (recur (rest items) (str acc (hiccup/html entry)) tag)
-                  (< jump 0) (recur (rest items) (str acc (apply str (repeat (* -1 jump) "</ol>"))
-                                                      (hiccup/html entry)) tag)))))
-      (str acc "</ol>"))))
+          (recur zp (rest items))
+          (recur (insert-toc-tree-entry zp
+                   {:tag tag
+                    :anchor anchor
+                    :text (or
+                            (if (string? title) title (-> title :content first))
+                            (first htext))})
+                 (rest items))))
+      (z/root zp))))
 
-(defn generate-toc [html]
-  (-> html
-      (.getBytes "UTF-8")
-      (java.io.ByteArrayInputStream.)
-      (html/parse)
-      :content
-      (get-headings)
-      (make-links)
-      (clojure.string/replace-first #"ol" "ol class=\"contents\"")))
+
+(defn- make-toc-entry
+  "Given an anchor link and some text, construct a toc entry
+  consisting of link to the anchor using the given text, wrapped
+  in an <li> tag."
+  [anchor text]
+  (when (and anchor text)
+    [:li [:a {:href (str "#" anchor)} text]]))
+
+
+(defn- build-toc
+  "Given the root of a toc tree and either :ol or :ul,
+  generate the table of contents and return it as a hiccup tree."
+  [toc-tree list-open & {:keys [outer-list?] :or {outer-list? true}}]
+  (let [{:keys [children], {:keys [anchor text]} :value} toc-tree
+        li (make-toc-entry anchor text)
+        first-list-open (if outer-list?
+                          (keyword (str (name list-open) ".content"))
+                          list-open)]
+    ; Create hiccup sequence of :ol/:ul tag and sequence of :li tags
+    (if (seq children)
+      (let [sublist [first-list-open (map build-toc children
+                                       (repeat list-open)
+                                       (repeat :outer-list?)
+                                       (repeat false))]]
+        (if-let [li li] ; The root element has nothing so ignore it
+          (seq [li sublist]) ; Use seq to lazily concat the li with the sublists
+          sublist))
+      li))) ; Or just return the naked :li tag
+
+(defn generate-toc
+  "Reads an HTML string and parses it for headers, then returns a list of links
+  to them.
+
+  Optionally, a map of :list-type can be provided with value :ul, :ol, or true.
+  :ol and true will result in an ordered list being generated for the table of
+  contents, while :ul will result in an unordered list. The default is an
+  ordered list."
+  [^String html & {:keys [list-type] :or {list-type :ol}}]
+  (let [list-type (if (true? list-type) :ol list-type)]
+    (-> html
+    (.getBytes "UTF-8")
+    (java.io.ByteArrayInputStream.)
+    (html/parse)
+    :content
+    (get-headings)
+    (build-toc-tree)
+    (build-toc list-type)
+    (hiccup/html))))

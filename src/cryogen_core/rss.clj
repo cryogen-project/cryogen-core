@@ -1,18 +1,21 @@
 (ns cryogen-core.rss
   (:require [clj-rss.core :as rss]
-            [clojure.xml :refer [emit]]
-            [text-decoration.core :refer :all])
+            [text-decoration.core :refer :all]
+            [cryogen-core.io :refer [create-file path]])
   (:import java.util.Date))
 
 
-(defn posts-to-items [site-url posts]
+(defn posts-to-items [^String site-url posts]
   (map
-    (fn [{:keys [uri title content date]}]
-      (let [link (str (if (.endsWith site-url "/") (apply str (butlast site-url)) site-url) uri)]
+    (fn [{:keys [uri title content date enclosure author description]}]
+      (let [link (str (if (.endsWith site-url "/") (apply str (butlast site-url)) site-url) uri)
+            enclosure (if (nil? enclosure) "" enclosure)]
         {:guid        link
          :link        link
          :title       title
-         :description content
+         :description (or description content)
+         :author      author
+         :enclosure   enclosure
          :pubDate     date}))
     posts))
 
@@ -26,8 +29,8 @@
               :lastBuildDate (Date.)})
     (posts-to-items (:site-url config) posts)))
 
-(defn make-filtered-channels [public {:keys [rss-filters blog-prefix] :as config} posts-by-tag]
+(defn make-filtered-channels [{:keys [rss-filters blog-prefix] :as config} posts-by-tag]
   (doseq [filter rss-filters]
-    (let [uri (str public blog-prefix "/" (name filter) ".xml")]
+    (let [uri (path "/" blog-prefix (str (name filter) ".xml"))]
       (println "\t-->" (cyan uri))
-      (spit uri (make-channel config (get posts-by-tag filter))))))
+      (create-file uri (make-channel config (get posts-by-tag filter))))))

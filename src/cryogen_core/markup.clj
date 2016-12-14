@@ -1,4 +1,5 @@
 (ns cryogen-core.markup
+  (:require [clojure.string :as s])
   (:import java.util.Collections))
 
 (defonce markup-registry (atom []))
@@ -13,10 +14,11 @@
 
 (defn rewrite-hrefs
   "Injects the blog prefix in front of any local links
-
-  ex. <img src='/img/cryogen.png'/> becomes <img src='/blog/img/cryogen.png'/>"
+    ex. <img src='/img/cryogen.png'/> becomes <img src='/blog/img/cryogen.png'/>"
   [blog-prefix text]
-  (clojure.string/replace text #"href=.?/|src=.?/" #(str (subs % 0 (dec (count %))) blog-prefix "/")))
+  (if (s/blank? blog-prefix)
+    text
+    (clojure.string/replace text #"href=.?/|src=.?/" #(str (subs % 0 (dec (count %))) blog-prefix "/"))))
 
 (defn markups
   "Return a vector of Markup implementations. This is the primary entry point
@@ -24,3 +26,13 @@
   Markups."
   []
   @markup-registry)
+
+(defn register-markup
+  "Add a Markup implementation to the registry."
+  [mu]
+  (swap! markup-registry conj mu))
+
+(defn clear-registry
+  "Reset the Markup registry."
+  []
+  (reset! markup-registry []))
