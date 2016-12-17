@@ -11,14 +11,14 @@
 
 (defn sass-installed?
   "Checks for the installation of Sass."
-  []
-  (= 0 (:exit (sh "sass" "--version"))))
+  [path-sass]
+  (= 0 (:exit (sh path-sass "--version"))))
 
 (defn compass-installed?
   "Checks for the installation of Compass."
-  []
+  [path-compass]
   (try
-    (= 0 (:exit (sh "compass" "--version")))
+    (= 0 (:exit (sh path-compass "--version")))
     (catch java.io.IOException _
       false)))
 
@@ -38,11 +38,13 @@
     done by sh / launching the sass command."
   [{:keys [src-sass
            dest-sass
+           path-sass
+           path-compass
            base-dir]}]
   (shell/with-sh-dir base-dir
-    (if (compass-installed?)
-      (sh "sass" "--compass" "--update" (str src-sass ":" dest-sass))
-      (sh "sass" "--update" (str src-sass ":" dest-sass)))))
+    (if (compass-installed? path-compass)
+      (sh path-sass "--compass" "--update" (str src-sass ":" dest-sass))
+      (sh path-sass "--update" (str src-sass ":" dest-sass)))))
 
 (defn compile-sass->css!
   "Given a directory src-sass, looks for all sass files and compiles them into
@@ -50,10 +52,11 @@ dest-sass. Prompts you to install sass if he finds sass files and can't find
 the command. Shows you any problems it comes across when compiling. "
   [{:keys [src-sass
            dest-sass
+           path-sass
            ignored-files
            base-dir] :as opts}]
   (when-let [sass-files (seq (find-sass-files base-dir src-sass ignored-files))]
-    (if (sass-installed?)
+    (if (sass-installed? path-sass)
       ;; I found sass files,
       ;; If sass is installed
       (do
