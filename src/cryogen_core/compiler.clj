@@ -85,7 +85,8 @@
   [^java.io.File page config markup]
   (with-open [rdr (java.io.PushbackReader. (reader page))]
     (let [re-root (re-pattern (str "^.*?(" (:page-root config) "|" (:post-root config) ")/"))
-          page-name (s/replace (str page) re-root "")
+          page-fwd (s/replace (str page) "\\" "/") ;; make it work on Windows
+          page-name (s/replace page-fwd re-root "")
           file-name (s/replace page-name (re-pattern-from-ext (m/ext markup)) ".html")
           page-meta (read-page-meta page-name rdr)
           content ((m/render-fn markup) rdr config)]
@@ -434,6 +435,8 @@
                      (update-in [:rss-filters] (fnil seq []))
                      (update-in [:sass-src] (fnil str "css"))
                      (update-in [:sass-dest] (fnil str "css"))
+                     (update-in [:sass-path] (fnil str "sass"))
+                     (update-in [:compass-path] (fnil str "compass"))
                      (update-in [:post-date-format] (fnil str "yyyy-MM-dd"))
                      (update-in [:keep-files] (fnil seq []))
                      (update-in [:ignored-files] (fnil seq [#"^\.#.*" #".*\.swp$"])))]
@@ -448,7 +451,7 @@
   "Generates all the html and copies over resources specified in the config"
   []
   (println (green "compiling assets..."))
-  (let [{:keys [^String site-url blog-prefix rss-name recent-posts sass-src sass-dest keep-files ignored-files previews? author-root-uri] :as config} (read-config)
+  (let [{:keys [^String site-url blog-prefix rss-name recent-posts sass-src sass-dest sass-path compass-path keep-files ignored-files previews? author-root-uri] :as config} (read-config)
         posts (add-prev-next (read-posts config))
         pages (add-prev-next (read-pages config))
         [navbar-pages sidebar-pages] (group-pages pages)
@@ -495,7 +498,9 @@
     (rss/make-filtered-channels config posts-by-tag)
     (println (blue "compiling sass"))
     (sass/compile-sass->css!
-      {:src-sass      sass-src
+      {:path-sass     sass-path
+       :path-compass  compass-path
+       :src-sass      sass-src
        :dest-sass     (path ".." "public" blog-prefix sass-dest)
        :ignored-files ignored-files
        :base-dir      "resources/templates/"})))
