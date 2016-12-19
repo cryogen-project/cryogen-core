@@ -143,7 +143,7 @@
          (m/markups))
        (sort-by :date)
        reverse
-       (drop-while #(and (:hide-future-posts? config) (.after (:date %) (:today config))))))
+       (drop-while #(and (:hide-future-posts? config) (.after (:date %) (java.util.Date.))))))
 
 (defn read-pages
   "Returns a sequence of maps representing the data from markdown files of pages.
