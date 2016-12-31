@@ -11,3 +11,5 @@ pom.xml.asc
 /.idea/
 /cryogen-core.iml
 /bin/
+/.classpath
+/.project
