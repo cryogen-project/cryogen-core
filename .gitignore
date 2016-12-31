@@ -10,3 +10,6 @@ pom.xml.asc
 .DS*
 /.idea/
 /cryogen-core.iml
+/bin/
+/.classpath
+/.project

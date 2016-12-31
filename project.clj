@@ -1,4 +1,4 @@
-(defproject cryogen-core "0.1.46"
+(defproject cryogen-core "0.1.47-SNAPSHOT"
             :description "Cryogen's compiler"
             :url "https://github.com/cryogen-project/cryogen-core"
             :license {:name "Eclipse Public License"
@@ -14,4 +14,6 @@
                            [selmer "1.10.2"]
                            [pandect "0.6.1"]
                            [hawk "0.2.11"]
-                           [clj-tagsoup "0.3.0" :exclusions [org.clojure/clojure]]])
+                           [clj-tagsoup "0.3.0" :exclusions [org.clojure/clojure]]]
+            :deploy-repositories [["snapshots" :clojars]
+                                  ["releases" :clojars]])

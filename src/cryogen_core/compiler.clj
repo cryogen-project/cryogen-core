@@ -225,29 +225,35 @@
 
 (defn compile-pages
   "Compiles all the pages into html and spits them out into the public folder"
-  [{:keys [blog-prefix page-root-uri] :as params} pages]
+  [{:keys [blog-prefix page-root-uri debug?] :as params} pages]
   (when-not (empty? pages)
     (println (blue "compiling pages"))
     (create-folder (path "/" blog-prefix page-root-uri))
     (doseq [{:keys [uri] :as page} pages]
       (println "\t-->" (cyan uri))
+      (when debug?
+        (println "\t-->" (cyan page)))
       (write-html uri
                   params
                   (render-file (str "/html/" (:layout page))
                                (merge params
                                       {:active-page     "pages"
+                                       :home            false
                                        :servlet-context (path "/" blog-prefix "/")
                                        :page            page
                                        :uri             uri}))))))
 
 (defn compile-posts
   "Compiles all the posts into html and spits them out into the public folder"
-  [{:keys [blog-prefix post-root-uri disqus-shortname] :as params} posts]
+  [{:keys [blog-prefix post-root-uri disqus-shortname debug?] :as params} posts]
   (when-not (empty? posts)
     (println (blue "compiling posts"))
     (create-folder (path "/" blog-prefix post-root-uri))
     (doseq [post posts]
       (println "\t-->" (cyan (:uri post)))
+      (println "\t-->" (cyan debug?))
+      (when debug?
+        (println "\t-->" (cyan post)))
       (write-html (:uri post)
                   params
                   (render-file (str "/html/" (:layout post))
@@ -350,16 +356,22 @@
   "Compiles the index page into html and spits it out into the public folder"
   [{:keys [disqus?] :as params}]
   (println (blue "compiling index"))
-  (let [uri (page-uri "index.html" params)]
+  (let [uri (page-uri "index.html" params)
+        debug? (-> params :debug?)
+        home-page (-> params :home-page)
+        meta {:active-page "home"
+              :home        true
+              :disqus?     disqus?
+              :uri         uri
+              :post        home-page
+              :page        home-page}]
+    (when debug?
+      (println "\t-->" (cyan meta)))
     (write-html uri
                 params
-                (render-file "/html/home.html"
+                (render-file (str "/html/" (:layout home-page))
                              (merge params
-                                    {:active-page "home"
-                                     :home        true
-                                     :disqus?     disqus?
-                                     :post        (get-in params [:latest-posts 0])
-                                     :uri         uri})))))
+                                    meta)))))
 
 (defn compile-archives
   "Compiles the archives page into html and spits it out into the public folder"
@@ -452,20 +464,27 @@
   "Generates all the html and copies over resources specified in the config"
   []
   (println (green "compiling assets..."))
-  (let [{:keys [^String site-url blog-prefix rss-name recent-posts sass-src sass-dest sass-path compass-path keep-files ignored-files previews? author-root-uri] :as config} (read-config)
+  (let [{:keys [^String site-url blog-prefix rss-name recent-posts sass-src sass-dest sass-path compass-path keep-files ignored-files previews? clean-urls? debug? author-root-uri] :as config} (read-config)
         posts (add-prev-next (read-posts config))
         pages (add-prev-next (read-pages config))
-        [navbar-pages sidebar-pages] (group-pages pages)
+        home-pages (filter #(boolean (:home? %)) pages)
+        pages-without-home (filter #(boolean (not (:home? %))) pages)
+        [navbar-pages sidebar-pages] (group-pages pages-without-home)
         posts-by-tag (group-by-tags posts)
         posts (tag-posts posts config)
+        latest-posts (->> posts (take recent-posts) vec)
         params (merge config
                       {:today         (java.util.Date.)
                        :title         (:site-title config)
                        :active-page   "home"
                        :tags          (map (partial tag-info config) (keys posts-by-tag))
-                       :latest-posts  (->> posts (take recent-posts) vec)
+                       :latest-posts  latest-posts
                        :navbar-pages  navbar-pages
                        :sidebar-pages sidebar-pages
+                       :home-page     (if (not-empty home-pages) 
+                                        (first home-pages) 
+                                        (merge (first latest-posts)
+                                               {:layout "home.html"}))                       
                        :archives-uri  (page-uri "archives.html" config)
                        :index-uri     (page-uri "index.html" config)
                        :tags-uri      (page-uri "tags.html" config)
@@ -473,6 +492,8 @@
                        :site-url      (if (.endsWith site-url "/") (.substring site-url 0 (dec (count site-url))) site-url)
                        :theme-path    (str "file:resources/templates/themes/" (:theme config))})]
 
+    (println (blue "debug info"))
+    (println "\t-->" (cyan navbar))
     (set-custom-resource-path! (:theme-path params))
     (wipe-public-folder keep-files)
     (println (blue "copying theme resources"))
@@ -480,12 +501,13 @@
     (println (blue "copying resources"))
     (copy-resources config)
     (copy-resources-from-markup-folders config)
-    (compile-pages params pages)
+    (compile-pages params pages-without-home)
     (compile-posts params posts)
     (compile-tags params posts-by-tag)
     (compile-tags-page params)
-    (if previews?
-      (compile-preview-pages params posts)
+    (when previews?
+      (compile-preview-pages params posts))
+    (when (or (not-empty home-pages) (not previews?))
       (compile-index params))
     (compile-archives params posts)
     (when author-root-uri
