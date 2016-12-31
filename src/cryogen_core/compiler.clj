@@ -225,13 +225,14 @@
 
 (defn compile-pages
   "Compiles all the pages into html and spits them out into the public folder"
-  [{:keys [blog-prefix page-root-uri] :as params} pages]
+  [{:keys [blog-prefix page-root-uri debug?] :as params} pages]
   (when-not (empty? pages)
     (println (blue "compiling pages"))
     (create-folder (path "/" blog-prefix page-root-uri))
     (doseq [{:keys [uri] :as page} pages]
       (println "\t-->" (cyan uri))
-      (println "\t-->" (cyan page))
+      (when debug?
+        (println "\t-->" (cyan page)))
       (write-html uri
                   params
                   (render-file (str "/html/" (:layout page))
@@ -354,6 +355,7 @@
   [{:keys [disqus?] :as params}]
   (println (blue "compiling index"))
   (let [uri (page-uri "index.html" params)
+        debug? (-> params :debug?)
         home-page (-> params :home-page)
         meta {:active-page "home"
               :home        true
@@ -361,8 +363,8 @@
               :uri         uri
               :post        home-page
               :page        home-page}]
-    (println "\t-->" (cyan meta))
-    (println "\t-->" (cyan (first (-> params :latest-posts))))
+    (when debug?
+      (println "\t-->" (cyan meta)))
     (write-html uri
                 params
                 (render-file (str "/html/" (:layout home-page))
@@ -460,7 +462,7 @@
   "Generates all the html and copies over resources specified in the config"
   []
   (println (green "compiling assets..."))
-  (let [{:keys [^String site-url blog-prefix rss-name recent-posts sass-src sass-dest sass-path compass-path keep-files ignored-files previews? author-root-uri] :as config} (read-config)
+  (let [{:keys [^String site-url blog-prefix rss-name recent-posts sass-src sass-dest sass-path compass-path keep-files ignored-files previews? clean-urls? debug? author-root-uri] :as config} (read-config)
         posts (add-prev-next (read-posts config))
         pages (add-prev-next (read-pages config))
         home-pages (filter #(boolean (:home? %)) pages)
@@ -499,8 +501,9 @@
     (compile-posts params posts)
     (compile-tags params posts-by-tag)
     (compile-tags-page params)
-    (if previews?
-      (compile-preview-pages params posts)
+    (when previews?
+      (compile-preview-pages params posts))
+    (when (or (not-empty home-pages) (not previews?))
       (compile-index params))
     (compile-archives params posts)
     (when author-root-uri
