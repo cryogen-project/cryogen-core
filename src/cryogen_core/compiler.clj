@@ -245,13 +245,15 @@
 
 (defn compile-posts
   "Compiles all the posts into html and spits them out into the public folder"
-  [{:keys [blog-prefix post-root-uri disqus-shortname] :as params} posts]
+  [{:keys [blog-prefix post-root-uri disqus-shortname debug?] :as params} posts]
   (when-not (empty? posts)
     (println (blue "compiling posts"))
     (create-folder (path "/" blog-prefix post-root-uri))
     (doseq [post posts]
       (println "\t-->" (cyan (:uri post)))
-      (println "\t-->" (cyan post))
+      (println "\t-->" (cyan debug?))
+      (when debug?
+        (println "\t-->" (cyan post)))
       (write-html (:uri post)
                   params
                   (render-file (str "/html/" (:layout post))
@@ -490,6 +492,8 @@
                        :site-url      (if (.endsWith site-url "/") (.substring site-url 0 (dec (count site-url))) site-url)
                        :theme-path    (str "file:resources/templates/themes/" (:theme config))})]
 
+    (println (blue "debug info"))
+    (println "\t-->" (cyan navbar))
     (set-custom-resource-path! (:theme-path params))
     (wipe-public-folder keep-files)
     (println (blue "copying theme resources"))
