@@ -493,7 +493,7 @@
                        :theme-path    (str "file:resources/templates/themes/" (:theme config))})]
 
     (println (blue "debug info"))
-    (println "\t-->" (cyan navbar))
+    (println "\t-->" (cyan navbar-pages))
     (set-custom-resource-path! (:theme-path params))
     (wipe-public-folder keep-files)
     (println (blue "copying theme resources"))
