@@ -14,7 +14,8 @@
              [get-resource find-assets create-folder create-file-recursive create-file wipe-public-folder
               copy-resources copy-resources-from-theme path]]
             [cryogen-core.sitemap :as sitemap]
-            [cryogen-core.rss :as rss])
+            [cryogen-core.rss :as rss]
+            [clojure.inspector :as inspector])
   (:import java.util.Locale))
 
 (cache-off!)
@@ -215,6 +216,36 @@
   (let [{navbar-pages  true
          sidebar-pages false} (group-by #(boolean (:navbar? %)) pages)]
     (map (partial sort-by :page-index) [navbar-pages sidebar-pages])))
+
+(defn- uri-level [uri]
+  (count (clojure.string/split uri #"/")))
+
+(defn- filter-pages-for-uri [uri pages]
+  (filter #(clojure.string/starts-with? (:uri %) uri) pages))
+
+(defn build-nav-map-level
+  "builds one level of nav-map and recurs to next level."
+  [parent-uri pages]
+  (let [current-level (+ 1 (uri-level parent-uri))
+        pages-of-parent (filter-pages-for-uri parent-uri pages)
+        pages-on-level (filter #(= current-level (uri-level (:uri %))) pages-of-parent)
+        pages-on-child-level (filter #(< current-level (uri-level (:uri %))) pages-of-parent)        
+        ]
+    (map #(let [page-on-level %
+                child-pages (filter-pages-for-uri (:uri page-on-level) pages-on-child-level)]
+            (if (empty? child-pages)
+              page-on-level  
+              (merge page-on-level
+                     {:navmap-children (build-nav-map-level (:uri page-on-level) child-pages)}))) pages-on-level)
+    ))
+
+(defn build-nav-map
+  "builds a nav-map from pages"
+  [pages]
+  (let [filtered-pages (filter #(boolean (:navmap? %)) pages)
+        sorted-pages (sort-by :uri filtered-pages)]
+     (build-nav-map-level "/pages/" sorted-pages)
+   ))
 
 (defn write-html
   "When `clean-urls?` is set, appends `/index.html` before spit; otherwise just spits."
@@ -470,6 +501,7 @@
         home-pages (filter #(boolean (:home? %)) pages)
         pages-without-home (filter #(boolean (not (:home? %))) pages)
         [navbar-pages sidebar-pages] (group-pages pages-without-home)
+        navmap-pages (build-nav-map pages-without-home)
         posts-by-tag (group-by-tags posts)
         posts (tag-posts posts config)
         latest-posts (->> posts (take recent-posts) vec)
@@ -480,6 +512,7 @@
                        :tags          (map (partial tag-info config) (keys posts-by-tag))
                        :latest-posts  latest-posts
                        :navbar-pages  navbar-pages
+                       :navmap-pages  navmap-pages
                        :sidebar-pages sidebar-pages
                        :home-page     (if (not-empty home-pages) 
                                         (first home-pages) 
@@ -491,9 +524,12 @@
                        :rss-uri       (path "/" blog-prefix rss-name)
                        :site-url      (if (.endsWith site-url "/") (.substring site-url 0 (dec (count site-url))) site-url)
                        :theme-path    (str "file:resources/templates/themes/" (:theme config))})]
-
-    (println (blue "debug info"))
-    (println "\t-->" (cyan navbar-pages))
+    (when debug?
+      (println (blue "debug: navbar-pages:"))
+      (println "\t-->" (cyan navbar-pages))
+      (println (blue "debug: navmap-pages:"))
+      (println "\t-->" (cyan navmap-pages))
+      )
     (set-custom-resource-path! (:theme-path params))
     (wipe-public-folder keep-files)
     (println (blue "copying theme resources"))

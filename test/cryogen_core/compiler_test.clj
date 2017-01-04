@@ -116,3 +116,36 @@ and more content.
         (reset-resources)
         (copy-and-check-markup-folders dirs mu false))))
   (reset-resources))
+
+
+(defn- page [uri] 
+  {:navmap? true, :uri uri :content uri})
+
+(defn- enhanced-page [uri children] 
+  {:navmap? true, :uri uri :content uri
+   :navmap-children children})
+           
+(deftest test-navmap-pages
+  (testing 
+    "No pages or posts nothing to copy"
+    (let [pages [{:navmap? false, :content "1"} 
+                 (page "/pages/nav1/") 
+                 (page "/pages/nav1/nav11/")
+                 (page "/pages/nav1/nav12/")
+                 (page "/pages/nav1/nav13/")
+                 (page "/pages/nav1/nav11/nav111/")
+                 (page "/pages/nav1/nav11/nav112/")]
+          expected [(enhanced-page 
+                      "/pages/nav1/"
+                      [(enhanced-page 
+                         "/pages/nav1/nav11/"
+                         [(page "/pages/nav1/nav11/nav111/")
+                          (page "/pages/nav1/nav11/nav112/")])
+                       (page "/pages/nav1/nav12/")
+                       (page "/pages/nav1/nav13/")]
+                      )] 
+          ]        
+      (is (= expected
+             (build-nav-map pages)))
+      )
+    ))
