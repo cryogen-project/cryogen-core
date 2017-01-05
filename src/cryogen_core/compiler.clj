@@ -231,12 +231,13 @@
         pages-on-level (filter #(= current-level (uri-level (:uri %))) pages-of-parent)
         pages-on-child-level (filter #(< current-level (uri-level (:uri %))) pages-of-parent)        
         ]
-    (map #(let [page-on-level %
-                child-pages (filter-pages-for-uri (:uri page-on-level) pages-on-child-level)]
-            (if (empty? child-pages)
-              page-on-level  
-              (merge page-on-level
-                     {:navmap-children (build-nav-map-level (:uri page-on-level) child-pages)}))) pages-on-level)
+    (sort-by :page-index
+             (map #(let [page-on-level %
+              child-pages (filter-pages-for-uri (:uri page-on-level) pages-on-child-level)]
+                     (if (empty? child-pages)
+                       page-on-level  
+                       (merge page-on-level
+                              {:navmap-children (build-nav-map-level (:uri page-on-level) child-pages)}))) pages-on-level))
     ))
 
 (defn build-nav-map
