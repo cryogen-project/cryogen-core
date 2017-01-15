@@ -481,10 +481,10 @@
                        :latest-posts  latest-posts
                        :navbar-pages  navbar-pages
                        :sidebar-pages sidebar-pages
-                       :home-page     (if (not-empty home-pages) 
-                                        (first home-pages) 
+                       :home-page     (if (not-empty home-pages)
+                                        (first home-pages)
                                         (merge (first latest-posts)
-                                               {:layout "home.html"}))                       
+                                               {:layout "home.html"}))
                        :archives-uri  (page-uri "archives.html" config)
                        :index-uri     (page-uri "index.html" config)
                        :tags-uri      (page-uri "tags.html" config)
