@@ -7,7 +7,6 @@
                            [cheshire "5.6.3"]
                            [clj-rss "0.2.3"]
                            [clj-text-decoration "0.0.3"]
-                           [crouton "0.1.2"]
                            [enlive "1.1.6"]
                            [hawk "0.2.11"]
                            [hiccup "1.0.5"]

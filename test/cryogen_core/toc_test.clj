@@ -1,7 +1,7 @@
 (ns cryogen-core.toc-test
   (:require [clojure.test :refer :all]
             [clojure.string :as s]
-            [crouton.html :as html]
+            [net.cgrand.enlive-html :as enlive]
             [hiccup.core :as hiccup]
             [cryogen-core.toc :refer :all]))
 
@@ -13,7 +13,7 @@
 
 (defn parse-to-headings
   [hiccup-seq]
-  (-> hiccup-seq hiccup/html html/parse-string :content get-headings))
+  (-> hiccup-seq hiccup/html enlive/html-snippet get-headings))
 
 ; Test that the get-headings function properly filters non-headers
 (deftest test-get-headings
@@ -101,5 +101,3 @@
            (generate-toc htmlString :list-type :ol)))
     (is (= "<ul class=\"content\"><li><a href=\"#test\">Test</a></li></ul>"
            (generate-toc htmlString :list-type :ul)))))
-
-
