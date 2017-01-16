@@ -1,6 +1,5 @@
 (ns cryogen-core.plugins
-  (:require [cryogen-core.compiler :refer [compile-assets-timed]]
-            [clojure.edn :as edn]
+  (:require [clojure.edn :as edn]
             [clojure.string :as s]
             [text-decoration.core :refer :all]))
 

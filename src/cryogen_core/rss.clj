@@ -1,7 +1,7 @@
 (ns cryogen-core.rss
   (:require [clj-rss.core :as rss]
             [text-decoration.core :refer :all]
-            [cryogen-core.io :refer [create-file path]])
+            [cryogen-core.io :as cryogen-io])
   (:import java.util.Date))
 
 
@@ -31,6 +31,6 @@
 
 (defn make-filtered-channels [{:keys [rss-filters blog-prefix] :as config} posts-by-tag]
   (doseq [filter rss-filters]
-    (let [uri (path "/" blog-prefix (str (name filter) ".xml"))]
+    (let [uri (cryogen-io/path "/" blog-prefix (str (name filter) ".xml"))]
       (println "\t-->" (cyan uri))
-      (create-file uri (make-channel config (get posts-by-tag filter))))))
+      (cryogen-io/create-file uri (make-channel config (get posts-by-tag filter))))))

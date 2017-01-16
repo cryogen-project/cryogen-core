@@ -1,9 +1,8 @@
 (ns cryogen-core.compiler-test
   (:require [clojure.test :refer :all]
+            [me.raynes.fs :as fs]
             [cryogen-core.compiler :refer :all]
-            [cryogen-core.io :refer [path]]
-            [cryogen-core.markup :as m]
-            [me.raynes.fs :as fs])
+            [cryogen-core.markup :as m])
   (:import [java.io File]))
 
 ; Test that the content-until-more-marker return nil or correct html text.
