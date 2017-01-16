@@ -5,8 +5,7 @@
             [clojure.java.io :refer [copy file reader writer]]
             [clojure.string :as s]
             [text-decoration.core :refer :all]
-            [pl.danieljanus.tagsoup :as tagsoup]
-            [hiccup.core :as hiccup]
+            [net.cgrand.enlive-html :as enlive]
             [cryogen-core.toc :refer [generate-toc]]
             [cryogen-core.sass :as sass]
             [cryogen-core.markup :as m]
@@ -295,23 +294,24 @@
                                      :uri         uri})))))
 
 (defn content-until-more-marker
-  [^String content]
-  (let [index (.indexOf content "<!--more-->")]
-    (if (pos? index)
-      (let [s (subs content 0 index)]
-        (->> ((tagsoup/parse-string s) 2)
-             (drop 2)
-             hiccup/html)))))
+  "Returns the content until the <!--more--> special comment,
+  closing any unclosed tags. Returns nil if there's no such comment."
+  [content]
+  (when-let [index (s/index-of content "<!--more-->")]
+    (->> (subs content 0 index)
+         enlive/html-snippet
+         enlive/emit*
+         (apply str))))
 
 (defn create-preview
   "Creates a single post preview"
   [blocks-per-preview post]
-  (merge post
-         {:content (or (content-until-more-marker (:content post))
-                       (->> ((tagsoup/parse-string (:content post)) 2)
-                            (drop 2)
-                            (take blocks-per-preview)
-                            hiccup/html))}))
+  (update post :content
+          #(or (content-until-more-marker %)
+               (->> (enlive/html-snippet %)
+                    (take blocks-per-preview)
+                    enlive/emit*
+                    (apply str)))))
 
 (defn create-previews
   "Returns a sequence of vectors, each containing a set of post previews"
@@ -481,10 +481,10 @@
                        :latest-posts  latest-posts
                        :navbar-pages  navbar-pages
                        :sidebar-pages sidebar-pages
-                       :home-page     (if (not-empty home-pages) 
-                                        (first home-pages) 
+                       :home-page     (if (not-empty home-pages)
+                                        (first home-pages)
                                         (merge (first latest-posts)
-                                               {:layout "home.html"}))                       
+                                               {:layout "home.html"}))
                        :archives-uri  (page-uri "archives.html" config)
                        :index-uri     (page-uri "index.html" config)
                        :tags-uri      (page-uri "tags.html" config)

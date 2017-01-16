@@ -22,7 +22,8 @@
 and more content.
   </div>
 </div>")
-         "<div id=\"post\"><div class=\"post-content\">
+         "<div id=\"post\">
+  <div class=\"post-content\">
     this post has more marker
 </div></div>")))
 

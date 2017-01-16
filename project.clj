@@ -14,6 +14,6 @@
                            [selmer "1.10.3"]
                            [pandect "0.6.1"]
                            [hawk "0.2.11"]
-                           [clj-tagsoup "0.3.0" :exclusions [org.clojure/clojure]]]
+                           [enlive "1.1.6"]]
             :deploy-repositories [["snapshots" :clojars]
                                   ["releases" :clojars]])
