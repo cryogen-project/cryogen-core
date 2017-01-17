@@ -372,7 +372,7 @@
       (print-debug-info meta))
     (write-html uri
                 params
-                (render-file "/html/home.html"
+                (render-file (str "/html/" (:layout home-page))
                              (merge params
                                     {:active-page "home"
                                      :home        true
@@ -497,7 +497,7 @@
                         :sidebar-pages sidebar-pages
                         :home-page     (if home-page
                                          home-page
-                                         (first latest-posts))
+                                         (assoc (first latest-posts) :layout "home.html"))
                         :archives-uri  (page-uri "archives.html" config)
                         :index-uri     (page-uri "index.html" config)
                         :tags-uri      (page-uri "tags.html" config)
