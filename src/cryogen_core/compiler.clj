@@ -378,7 +378,8 @@
                                      :home        true
                                      :disqus?     disqus?
                                      :uri         uri
-                                     :post        home-page})))))
+                                     :post        home-page
+                                     :page        home-page})))))
 
 (defn compile-archives
   "Compiles the archives page into html and spits it out into the public folder"
