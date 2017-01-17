@@ -1,5 +1,6 @@
 (ns cryogen-core.compiler
   (:require [clojure.java.io :as io]
+            [clojure.pprint :refer [pprint]]
             [clojure.string :as s]
             [io.aviso.exception :refer [write-exception]]
             [net.cgrand.enlive-html :as enlive]
@@ -200,13 +201,13 @@
    :uri  (page-uri (str (name tag) ".html") :tag-root-uri config)})
 
 (defn add-prev-next
-  "Adds a :prev and :next key to the page/post data containing the title and uri of the prev/next
+  "Adds a :prev and :next key to the page/post data containing the metadata of the prev/next
   post/page if it exists"
   [pages]
   (map (fn [[prev target next]]
          (assoc target
-           :prev (if prev (select-keys prev [:title :uri]) nil)
-           :next (if next (select-keys next [:title :uri]) nil)))
+           :prev (if prev (dissoc prev :content) nil)
+           :next (if next (dissoc next :content) nil)))
        (partition 3 1 (flatten [nil pages nil]))))
 
 (defn group-pages
@@ -223,6 +224,10 @@
     (cryogen-io/create-file-recursive (cryogen-io/path file-uri "index.html") data)
     (cryogen-io/create-file file-uri data)))
 
+(defn- print-debug-info [data]
+  (println "DEBUG:")
+  (pprint data))
+
 (defn compile-pages
   "Compiles all the pages into html and spits them out into the public folder"
   [{:keys [blog-prefix page-root-uri debug?] :as params} pages]
@@ -230,9 +235,9 @@
     (println (blue "compiling pages"))
     (cryogen-io/create-folder (cryogen-io/path "/" blog-prefix page-root-uri))
     (doseq [{:keys [uri] :as page} pages]
-      (println "\t-->" (cyan uri))
+      (println "-->" (cyan uri))
       (when debug?
-        (println "\t\tdebug-->" (cyan page)))
+        (print-debug-info page))
       (write-html uri
                   params
                   (render-file (str "/html/" (:layout page))
@@ -250,9 +255,9 @@
     (println (blue "compiling posts"))
     (cryogen-io/create-folder (cryogen-io/path "/" blog-prefix post-root-uri))
     (doseq [{:keys [uri] :as post} posts]
-      (println "\t-->" (cyan uri))
+      (println "-->" (cyan uri))
       (when debug?
-        (println "\t\tdebug-->" (cyan post)))
+        (print-debug-info post))
       (write-html uri
                   params
                   (render-file (str "/html/" (:layout post))
@@ -271,7 +276,7 @@
     (cryogen-io/create-folder (cryogen-io/path "/" blog-prefix tag-root-uri))
     (doseq [[tag posts] posts-by-tag]
       (let [{:keys [name uri]} (tag-info params tag)]
-        (println "\t-->" (cyan uri))
+        (println "-->" (cyan uri))
         (write-html uri
                     params
                     (render-file "/html/tag.html"
@@ -362,20 +367,18 @@
   "Compiles the index page into html and spits it out into the public folder"
   [{:keys [disqus? debug? home-page] :as params}]
   (println (blue "compiling index"))
-  (let [uri  (page-uri "index.html" params)
-        meta {:active-page "home"
-              :home        true
-              :disqus?     disqus?
-              :uri         uri
-              :post        home-page
-              :page        home-page}]
+  (let [uri (page-uri "index.html" params)]
     (when debug?
-      (println "\t\tdebug-->" (cyan meta)))
+      (print-debug-info meta))
     (write-html uri
                 params
-                (render-file (str "/html/" (:layout home-page))
+                (render-file "/html/home.html"
                              (merge params
-                                    meta)))))
+                                    {:active-page "home"
+                                     :home        true
+                                     :disqus?     disqus?
+                                     :uri         uri
+                                     :post        home-page})))))
 
 (defn compile-archives
   "Compiles the archives page into html and spits it out into the public folder"
@@ -400,7 +403,7 @@
   ;; if the post author is empty defaults to config's :author
   (doseq [{:keys [author posts]} (group-for-author posts author)]
     (let [uri (page-uri (str author ".html") :author-root-uri params)]
-      (println "\t-->" (cyan uri))
+      (println "-->" (cyan uri))
       (write-html uri
                   params
                   (render-file "/html/author.html"
@@ -470,58 +473,61 @@
   (println (green "compiling assets..."))
   (let [{:keys [^String site-url blog-prefix rss-name recent-posts sass-dest keep-files ignored-files previews? author-root-uri theme]
          :as   config} (read-config)
-        posts              (add-prev-next (read-posts config))
-        pages              (add-prev-next (read-pages config))
-        home-pages         (filter #(boolean (:home? %)) pages)
-        pages-without-home (filter #(boolean (not (:home? %))) pages)
-        [navbar-pages sidebar-pages] (group-pages pages-without-home)
-        posts-by-tag       (group-by-tags posts)
-        posts              (tag-posts posts config)
-        latest-posts       (->> posts (take recent-posts) vec)
-        params             (merge config
-                                  {:today         (java.util.Date.)
-                                   :title         (:site-title config)
-                                   :active-page   "home"
-                                   :tags          (map (partial tag-info config) (keys posts-by-tag))
-                                   :latest-posts  latest-posts
-                                   :navbar-pages  navbar-pages
-                                   :sidebar-pages sidebar-pages
-                                   :home-page     (if (not-empty home-pages)
-                                                    (first home-pages)
-                                                    (merge (first latest-posts)
-                                                           {:layout "home.html"}))
-                                   :archives-uri  (page-uri "archives.html" config)
-                                   :index-uri     (page-uri "index.html" config)
-                                   :tags-uri      (page-uri "tags.html" config)
-                                   :rss-uri       (cryogen-io/path "/" blog-prefix rss-name)
-                                   :site-url      (if (.endsWith site-url "/") (.substring site-url 0 (dec (count site-url))) site-url)
-                                   :theme-path    (str "file:resources/templates/themes/" theme)})]
+        posts        (add-prev-next (read-posts config))
+        posts-by-tag (group-by-tags posts)
+        posts        (tag-posts posts config)
+        latest-posts (->> posts (take recent-posts) vec)
+        pages        (read-pages config)
+        home-page    (->> pages
+                          (filter #(boolean (:home? %)))
+                          (first))
+        other-pages  (->> pages
+                          (remove #{home-page})
+                          (add-prev-next))
+        [navbar-pages
+         sidebar-pages] (group-pages other-pages)
+        params       (merge
+                       config
+                       {:today         (java.util.Date.)
+                        :title         (:site-title config)
+                        :active-page   "home"
+                        :tags          (map (partial tag-info config) (keys posts-by-tag))
+                        :latest-posts  latest-posts
+                        :navbar-pages  navbar-pages
+                        :sidebar-pages sidebar-pages
+                        :home-page     (if home-page
+                                         home-page
+                                         (first latest-posts))
+                        :archives-uri  (page-uri "archives.html" config)
+                        :index-uri     (page-uri "index.html" config)
+                        :tags-uri      (page-uri "tags.html" config)
+                        :rss-uri       (cryogen-io/path "/" blog-prefix rss-name)
+                        :site-url      (if (.endsWith site-url "/") (.substring site-url 0 (dec (count site-url))) site-url)})]
 
-    (println (blue "debug info"))
-    (println "\t-->" (cyan navbar-pages))
-    (set-custom-resource-path! (:theme-path params))
+    (set-custom-resource-path! (str "file:resources/templates/themes/" theme))
     (cryogen-io/wipe-public-folder keep-files)
     (println (blue "copying theme resources"))
     (cryogen-io/copy-resources-from-theme config)
     (println (blue "copying resources"))
     (cryogen-io/copy-resources config)
     (copy-resources-from-markup-folders config)
-    (compile-pages params pages-without-home)
+    (compile-pages params other-pages)
     (compile-posts params posts)
     (compile-tags params posts-by-tag)
     (compile-tags-page params)
-    (when previews?
-      (compile-preview-pages params posts))
-    (when (or (not-empty home-pages) (not previews?))
+    (if previews?
+      (compile-preview-pages params posts)
       (compile-index params))
     (compile-archives params posts)
     (when author-root-uri
       (println (blue "generating authors views"))
       (compile-authors params posts))
     (println (blue "generating site map"))
-    (cryogen-io/create-file (cryogen-io/path "/" blog-prefix "sitemap.xml") (sitemap/generate site-url ignored-files))
+    (->> (sitemap/generate site-url ignored-files)
+         (cryogen-io/create-file (cryogen-io/path "/" blog-prefix "sitemap.xml")))
     (println (blue "generating main rss"))
-    (cryogen-io/create-file (cryogen-io/path "/" blog-prefix rss-name) (rss/make-channel config posts))
+    (->> (rss/make-channel config posts)
+         (cryogen-io/create-file (cryogen-io/path "/" blog-prefix rss-name)))
     (println (blue "generating filtered rss"))
     (rss/make-filtered-channels config posts-by-tag)
     (println (blue "compiling sass"))
