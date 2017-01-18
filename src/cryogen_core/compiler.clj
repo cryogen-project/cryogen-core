@@ -534,7 +534,7 @@
     (println (blue "compiling sass"))
     (sass/compile-sass->css!
       (merge (select-keys config [:sass-path :compass-path :sass-src :ignored-files])
-             {:dest-sass (cryogen-io/path ".." "public" blog-prefix sass-dest)
+             {:sass-dest (cryogen-io/path ".." "public" blog-prefix sass-dest)
               :base-dir  "resources/templates/"}))))
 
 (defn compile-assets-timed []
