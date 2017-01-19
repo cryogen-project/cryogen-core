@@ -58,12 +58,22 @@
       (update-existing "codemirror_options_in" (partial map-keys ->camelCaseString))
       (update-existing "codemirror_options_out" (partial map-keys ->camelCaseString))))
 
-(defn merge-configs [global-config post-config]
+(defn merge-configs
+  "Merges the defaults, global config and post config,
+  transforms lisp-case keywords into snake_case/camelCase strings
+  and infers whether to use minified or non-minified js
+  (this can be overridden by supplying a :js key).
+  If the post config is just true, uses only the global config.
+  Returns nil if either there's no post-config or if there's no settings after merging."
+  [global-config post-config]
   (when post-config
     (let [post-config (if (true? post-config) {} post-config)
           merged-config (deep-merge defaults
                                     (update-existing global-config :settings normalize-settings)
                                     (update-existing post-config :settings normalize-settings))]
+      ;; It would make more sense to return nil if there's no selector specified
+      ;; instead of no settings, but that would be too much of a
+      ;; maintenance burden, as there are new selectors added all the time.
       (when (:settings merged-config)
         (if (:js merged-config)
           merged-config
@@ -77,7 +87,10 @@
 (defn include-js [src]
   (str "<script src=" (pr-str src) "></script>"))
 
-(defn emit [global-config post-config]
+(defn emit
+  "Takes the :klipse config from config.edn and the :klipse config from the
+  current post, and returns the html to include on the bottom of the page."
+  [global-config post-config]
   (when-let [{:keys [settings js-src js css-base css-theme]}
              (merge-configs global-config post-config)]
 
