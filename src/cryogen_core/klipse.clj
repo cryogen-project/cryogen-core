@@ -47,14 +47,14 @@
   #{"selector" "selector_reagent"})
 
 (defn clojure-eval?
-  "Does the configuration include any keys that imply clojure eval?"
-  [normalized-cfg]
-  (some clojure-selectors (keys normalized-cfg)))
+  "Do the settings include any keys that imply clojure eval?"
+  [normalized-settings]
+  (some clojure-selectors (keys normalized-settings)))
 
 (defn normalize-settings
   "Transform the keys to the correct snake-case or camelCase strings."
-  [cfg]
-  (-> (map-keys ->snake_case_string cfg)
+  [settings]
+  (-> (map-keys ->snake_case_string settings)
       (update-existing "codemirror_options_in" (partial map-keys ->camelCaseString))
       (update-existing "codemirror_options_out" (partial map-keys ->camelCaseString))))
 
