@@ -1,7 +1,8 @@
 (ns cryogen-core.klipse
-  (:require
-   [camel-snake-kebab.core :refer [->snake_case_string ->camelCaseString]]
-   [cheshire.core :as json]))
+  (:require [clojure.string :as str]
+            [camel-snake-kebab.core :refer [->snake_case_string ->camelCaseString]]
+            [cheshire.core :as json]
+            [net.cgrand.enlive-html :as enlive]))
 
 ;;;;;;;;;;;
 ;; utils
@@ -28,6 +29,25 @@
              v2))
          ms))
 
+(defn filter-html-elems
+  "Recursively walks a sequence of enlive-style html elements depth first
+  and returns a flat sequence of the elements where (pred elem)"
+  [pred html-elems]
+  (reduce (fn [acc {:keys [content] :as elem}]
+            (into (if (pred elem) (conj acc elem) acc)
+                  (filter-html-elems pred content)))
+          [] html-elems))
+
+(defn code-block-classes
+  "Takes a string of html and returns a sequence of
+  all the classes on all code blocks."
+  [html]
+  (->> html
+       enlive/html-snippet
+       (filter-html-elems (comp #{:code} :tag))
+       (keep (comp :class :attrs))
+       (mapcat #(str/split % #" "))))
+
 ;;;;;;;;;;;;
 ;; klipse
 
@@ -46,10 +66,19 @@
   "A set of selectors that imply clojure evaluation."
   #{"selector" "selector_reagent"})
 
-(defn clojure-eval?
-  "Do the settings include any keys that imply clojure eval?"
+(defn clojure-eval-classes
+  "Takes settings and returns a set of the html classes that imply clojure eval."
   [normalized-settings]
-  (some clojure-selectors (keys normalized-settings)))
+  (reduce (fn [classes selector]
+            (if-let [klass (get normalized-settings selector)]
+              (conj classes (->> klass rest (apply str))) ;; Strip the leading .
+              classes))
+          #{} clojure-selectors))
+
+(defn clojure-eval?
+  "Takes settings and html and returns whether there is any clojure eval."
+  [normalized-settings html]
+  (boolean (some (clojure-eval-classes normalized-settings) (code-block-classes html))))
 
 (defn normalize-settings
   "Transform the keys to the correct snake-case or camelCase strings."
@@ -61,25 +90,24 @@
 (defn merge-configs
   "Merges the defaults, global config and post config,
   transforms lisp-case keywords into snake_case/camelCase strings
-  and infers whether to use minified or non-minified js
-  (this can be overridden by supplying a :js key).
-  If the post config is just true, uses only the global config.
-  Returns nil if either there's no post-config or if there's no settings after merging."
+  Returns nil if there's no post-config.
+  A post-config with the value true counts as an empty map."
   [global-config post-config]
   (when post-config
-    (let [post-config (if (true? post-config) {} post-config)
-          merged-config (deep-merge defaults
-                                    (update-existing global-config :settings normalize-settings)
-                                    (update-existing post-config :settings normalize-settings))]
-      ;; It would make more sense to return nil if there's no selector specified
-      ;; instead of no settings, but that would be too much of a
-      ;; maintenance burden, as there are new selectors added all the time.
-      (when (:settings merged-config)
-        (if (:js merged-config)
-          merged-config
-          (assoc merged-config :js (if (clojure-eval? (:settings merged-config))
-                                     :non-min
-                                     :min)))))))
+    (let [post-config (if (true? post-config) {} post-config)]
+      (deep-merge defaults
+                  (update-existing global-config :settings normalize-settings)
+                  (update-existing post-config :settings normalize-settings)))))
+
+(defn infer-clojure-eval
+  "Infers whether there's clojure eval and returns the config with the
+  appropriate value assoc'd to :js.
+  Returns the config untouched if :js is already specified."
+  [config html]
+  (if (:js config)
+    config
+    (assoc config :js
+           (if (clojure-eval? (:settings config) html) :non-min :min))))
 
 (defn include-css [href]
   (str "<link rel=\"stylesheet\" type=\"text/css\" href=" (pr-str href) ">"))
@@ -90,9 +118,9 @@
 (defn emit
   "Takes the :klipse config from config.edn and the :klipse config from the
   current post, and returns the html to include on the bottom of the page."
-  [global-config post-config]
+  [config html]
   (when-let [{:keys [settings js-src js css-base css-theme]}
-             (merge-configs global-config post-config)]
+             (infer-clojure-eval config html)]
 
     (assert (#{:min :non-min} js)
             (str ":js needs to be one of :min or :non-min but was: " js))
