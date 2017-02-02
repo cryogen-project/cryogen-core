@@ -51,6 +51,22 @@
 ;;;;;;;;;;;;
 ;; klipse
 
+(defn eval-classes
+  "Takes the :settings map and returns all values that are css class selectors."
+  [settings]
+  (filter #(str/starts-with? % ".") (vals settings)))
+
+(defn tag-nohighlight
+  "Takes html as a string and a coll of class-selectors and adds
+   nohighlight to all code blocks that includes one of them."
+  [html settings]
+  (letfn [(tag [h clas]
+            (enlive/sniptest h
+              [(keyword (str "code" clas))]
+              (fn [x]
+                (update-in x [:attrs :class] #(str % " nohighlight")))))]
+    (reduce tag html (eval-classes settings))))
+
 (def defaults
   {:js-src
    {:min "https://storage.googleapis.com/app.klipse.tech/plugin_prod/js/klipse_plugin.min.js"

@@ -471,21 +471,26 @@
     (catch Exception _
       (throw (IllegalArgumentException. "Failed to parse config.edn")))))
 
+(defn klipsify
+  "Add the klipse html under the :klipse key and adds nohighlight
+  classes to any code blocks that are to be klipsified. Expects
+  configuration to be under :klipse, if there's none it does nothing."
+  [{:keys [klipse content] :as post-or-page}]
+  (-> post-or-page
+      (update :klipse klipse/emit content)
+      (update :content klipse/tag-nohighlight (:settings klipse))))
+
 (defn compile-assets
   "Generates all the html and copies over resources specified in the config"
   []
   (println (green "compiling assets..."))
   (let [{:keys [^String site-url blog-prefix rss-name recent-posts sass-dest keep-files ignored-files previews? author-root-uri theme]
          :as   config} (read-config)
-        posts        (map (fn [{:keys [klipse content] :as post}]
-                            (assoc post :klipse (klipse/emit klipse content)))
-                          (add-prev-next (read-posts config)))
+        posts        (map klipsify (add-prev-next (read-posts config)))
         posts-by-tag (group-by-tags posts)
         posts        (tag-posts posts config)
         latest-posts (->> posts (take recent-posts) vec)
-        pages        (map (fn [{:keys [klipse content] :as page}]
-                            (assoc page :klipse (klipse/emit klipse content)))
-                          (read-pages config))
+        pages        (map klipsify (read-pages config))
         home-page    (->> pages
                           (filter #(boolean (:home? %)))
                           (first))
