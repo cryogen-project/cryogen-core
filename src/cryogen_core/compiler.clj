@@ -8,6 +8,7 @@
             [selmer.util :refer [set-custom-resource-path!]]
             [text-decoration.core :refer :all]
             [cryogen-core.io :as cryogen-io]
+            [cryogen-core.klipse :as klipse]
             [cryogen-core.markup :as m]
             [cryogen-core.rss :as rss]
             [cryogen-core.sass :as sass]
@@ -111,7 +112,8 @@
     (merge
       (merge-meta-and-content file-name page-meta content)
       {:uri        (page-uri file-name :page-root-uri config)
-       :page-index (:page-index page-meta)})))
+       :page-index (:page-index page-meta)
+       :klipse     (klipse/merge-configs (:klipse config) (:klipse page-meta))})))
 
 (defn parse-post
   "Return a map with the given post's information."
@@ -128,7 +130,8 @@
          :formatted-archive-group formatted-group
          :parsed-archive-group    (.parse archive-fmt formatted-group)
          :uri                     (page-uri file-name :post-root-uri config)
-         :tags                    (set (:tags page-meta))}))))
+         :tags                    (set (:tags page-meta))
+         :klipse                  (klipse/merge-configs (:klipse config) (:klipse page-meta))}))))
 
 (defn read-posts
   "Returns a sequence of maps representing the data from markdown files of posts.
@@ -474,11 +477,15 @@
   (println (green "compiling assets..."))
   (let [{:keys [^String site-url blog-prefix rss-name recent-posts sass-dest keep-files ignored-files previews? author-root-uri theme]
          :as   config} (read-config)
-        posts        (add-prev-next (read-posts config))
+        posts        (map (fn [{:keys [klipse content] :as post}]
+                            (assoc post :klipse (klipse/emit klipse content)))
+                          (add-prev-next (read-posts config)))
         posts-by-tag (group-by-tags posts)
         posts        (tag-posts posts config)
         latest-posts (->> posts (take recent-posts) vec)
-        pages        (read-pages config)
+        pages        (map (fn [{:keys [klipse content] :as page}]
+                            (assoc page :klipse (klipse/emit klipse content)))
+                          (read-pages config))
         home-page    (->> pages
                           (filter #(boolean (:home? %)))
                           (first))
