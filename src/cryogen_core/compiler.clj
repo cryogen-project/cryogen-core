@@ -516,7 +516,8 @@
   "Generates all the html and copies over resources specified in the config"
   []
   (println (green "compiling assets..."))
-  (let [{:keys [^String site-url blog-prefix rss-name recent-posts sass-dest keep-files ignored-files previews? author-root-uri theme]
+  (let [{:keys [^String site-url blog-prefix rss-name recent-posts sass-dest keep-files ignored-files previews? 
+                author-root-uri theme debug?]
          :as config} (read-config)
         posts        (map klipsify (add-prev-next (read-posts config)))
         posts-by-tag (group-by-tags posts)
