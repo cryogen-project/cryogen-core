@@ -14,7 +14,8 @@
             [cryogen-core.sass :as sass]
             [cryogen-core.sitemap :as sitemap]
             [clojure.inspector :as inspector]
-            [cryogen-core.toc :as toc])
+            [cryogen-core.toc :as toc]
+            [cryogen-core.navbar-model :as navbar-model])
   (:import java.util.Locale))
 
 (cache-off!)
@@ -220,37 +221,6 @@
   (let [{navbar-pages  true
          sidebar-pages false} (group-by #(boolean (:navbar? %)) pages)]
     (map (partial sort-by :page-index) [navbar-pages sidebar-pages])))
-
-(defn- uri-level [uri]
-  (count (clojure.string/split uri #"/")))
-
-(defn- filter-pages-for-uri [uri pages]
-  (filter #(clojure.string/starts-with? (:uri %) uri) pages))
-
-(defn build-nav-map-level
-  "builds one level of nav-map and recurs to next level."
-  [parent-uri pages]
-  (let [current-level (+ 1 (uri-level parent-uri))
-        pages-of-parent (filter-pages-for-uri parent-uri pages)
-        pages-on-level (filter #(= current-level (uri-level (:uri %))) pages-of-parent)
-        pages-on-child-level (filter #(< current-level (uri-level (:uri %))) pages-of-parent)        
-        ]
-    (sort-by :page-index
-             (map #(let [page-on-level %
-              child-pages (filter-pages-for-uri (:uri page-on-level) pages-on-child-level)]
-                     (if (empty? child-pages)
-                       page-on-level  
-                       (merge page-on-level
-                              {:navmap-children (build-nav-map-level (:uri page-on-level) child-pages)}))) pages-on-level))
-    ))
-
-(defn build-nav-map
-  "builds a nav-map from pages"
-  [pages]
-  (let [filtered-pages (filter #(boolean (:navmap? %)) pages)
-        sorted-pages (sort-by :uri filtered-pages)]
-     (build-nav-map-level "/pages/" sorted-pages)
-   ))
 
 (defn write-html
   "When `clean-urls?` is set, appends `/index.html` before spit; otherwise just spits."
@@ -495,7 +465,9 @@
                      (update-in [:compass-path] (fnil str "compass"))
                      (update-in [:post-date-format] (fnil str "yyyy-MM-dd"))
                      (update-in [:keep-files] (fnil seq []))
-                     (update-in [:ignored-files] (fnil seq [#"^\.#.*" #".*\.swp$"])))]
+                     (update-in [:ignored-files] (fnil seq [#"^\.#.*" #".*\.swp$"]))
+                     (update-in [:navbar-model] (fnil :flat))
+                     )]
       (merge
         config
         {:page-root-uri (root-uri :page-root-uri config)
@@ -517,7 +489,7 @@
   []
   (println (green "compiling assets..."))
   (let [{:keys [^String site-url blog-prefix rss-name recent-posts sass-dest keep-files ignored-files previews? 
-                author-root-uri theme debug?]
+                author-root-uri theme debug? navbar-model]
          :as config} (read-config)
         posts        (map klipsify (add-prev-next (read-posts config)))
         posts-by-tag (group-by-tags posts)
@@ -532,16 +504,20 @@
                           (add-prev-next))
         [navbar-pages
          sidebar-pages] (group-pages other-pages)
-        navmap-pages (build-nav-map other-pages)
         params (merge config
                       {:today         (java.util.Date.)
                        :title         (:site-title config)
                        :active-page   "home"
                        :tags          (map (partial tag-info config) (keys posts-by-tag))
                        :latest-posts  latest-posts
-                       :navbar-pages  navbar-pages
-                       :navmap-pages  navmap-pages
-                       :sidebar-pages sidebar-pages
+                       :navbar-pages  (cond 
+                                        (= navbar-model :flat) navbar-pages
+                                        (= navbar-model :hierarchic) (navbar-model/build-nav-map navbar-pages)
+                                        )
+                       :sidebar-pages (cond 
+                                        (= navbar-model :flat) sidebar-pages
+                                        ;(= navbar-model :hierarchic) (build-nav-map navbar-pages)
+                                        )
                        :home-page     (if home-page
                                          home-page
                                          (assoc (first latest-posts) :layout "home.html"))                     
@@ -553,8 +529,6 @@
     (when debug?
       (println (blue "debug: navbar-pages:"))
       (println "\t-->" (cyan navbar-pages))
-      (println (blue "debug: navmap-pages:"))
-      (println "\t-->" (cyan navmap-pages))
       )
     (set-custom-resource-path! (str "file:resources/templates/themes/" theme))
     (cryogen-io/wipe-public-folder keep-files)

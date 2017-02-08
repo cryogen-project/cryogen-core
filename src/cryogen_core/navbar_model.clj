@@ -1,0 +1,33 @@
+(ns cryogen-core.navbar-model
+  (:require 
+    [clojure.string :as s]))
+
+(defn- uri-level [uri]
+  (count (s/split uri #"/")))
+
+(defn- filter-pages-for-uri [uri pages]
+  (filter #(s/starts-with? (:uri %) uri) pages))
+
+(defn build-nav-map-level
+  "builds one level of nav-map and recurs to next level."
+  [parent-uri pages]
+  (let [current-level (+ 1 (uri-level parent-uri))
+        pages-of-parent (filter-pages-for-uri parent-uri pages)
+        pages-on-level (filter #(= current-level (uri-level (:uri %))) pages-of-parent)
+        pages-on-child-level (filter #(< current-level (uri-level (:uri %))) pages-of-parent)        
+        ]
+    (sort-by :page-index
+             (map #(let [page-on-level %
+              child-pages (filter-pages-for-uri (:uri page-on-level) pages-on-child-level)]
+                     (if (empty? child-pages)
+                       page-on-level  
+                       (merge page-on-level
+                              {:children (build-nav-map-level (:uri page-on-level) child-pages)}))) pages-on-level))
+    ))
+
+(defn build-nav-map
+  "builds a nav-map from pages"
+  [pages]
+  (let [sorted-pages (sort-by :uri pages)]
+     (build-nav-map-level "/pages/" sorted-pages)
+   ))
