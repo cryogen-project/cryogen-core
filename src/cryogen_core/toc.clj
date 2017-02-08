@@ -1,6 +1,6 @@
 (ns cryogen-core.toc
   (:require [clojure.zip :as z]
-            [crouton.html :as html]
+            [net.cgrand.enlive-html :as enlive]
             [hiccup.core :as hiccup]))
 
 (def _h [:h1 :h2 :h3 :h4 :h5 :h6])
@@ -102,13 +102,10 @@
   :ol and true will result in an ordered list being generated for the table of
   contents, while :ul will result in an unordered list. The default is an
   ordered list."
-  [^String html & {:keys [list-type] :or {list-type :ol}}]
+  [html & {:keys [list-type] :or {list-type :ol}}]
   (let [list-type (if (true? list-type) :ol list-type)]
     (-> html
-    (.getBytes "UTF-8")
-    (java.io.ByteArrayInputStream.)
-    (html/parse)
-    :content
+    (enlive/html-snippet)
     (get-headings)
     (build-toc-tree)
     (build-toc list-type)

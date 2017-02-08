@@ -1,6 +1,6 @@
 (ns cryogen-core.sitemap
   (:require [clojure.xml :refer [emit]]
-            [cryogen-core.io :refer [get-resource find-assets]])
+            [cryogen-core.io :as cryogen-io])
   (:import java.util.Date))
 
 ;;generate sitemaps using the sitemap spec
@@ -19,7 +19,7 @@
       {:tag :urlset
        :attrs {:xmlns "http://www.sitemaps.org/schemas/sitemap/0.9"}
        :content
-       (for [^java.io.File f (find-assets "public" ".html" ignored-files)]
+       (for [^java.io.File f (cryogen-io/find-assets "public" ".html" ignored-files)]
          {:tag :url
           :content
           [{:tag :loc

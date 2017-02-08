@@ -1,8 +1,8 @@
 (ns cryogen-core.sass
-  (:require [clojure.java.shell :as shell]
-            [clojure.java.io :as io]
+  (:require [clojure.java.io :as io]
+            [clojure.java.shell :as shell]
             [text-decoration.core :refer :all]
-            [cryogen-core.io :refer [ignore match-re-filter]]))
+            [cryogen-core.io :as cryogen-io]))
 
 (defmacro sh
   [& args]
@@ -11,64 +11,51 @@
 
 (defn sass-installed?
   "Checks for the installation of Sass."
-  [path-sass]
-  (= 0 (:exit (sh path-sass "--version"))))
+  [sass-path]
+  (zero? (:exit (sh sass-path "--version"))))
 
 (defn compass-installed?
   "Checks for the installation of Compass."
-  [path-compass]
+  [compass-path]
   (try
-    (= 0 (:exit (sh path-compass "--version")))
+    (zero? (:exit (sh compass-path "--version")))
     (catch java.io.IOException _
       false)))
 
 (defn find-sass-files
   "Given a Diretory, gets files, Filtered to those having scss or sass
-  extention. Ignores files matching any ignored regexps."
+   extention. Ignores files matching any ignored regexps."
   [base-dir dir ignored-files]
-  (let [^java.io.FilenameFilter filename-filter (match-re-filter #"(?i:s[ca]ss$)")]
+  (let [^java.io.FilenameFilter filename-filter (cryogen-io/match-re-filter #"(?i:s[ca]ss$)")]
     (->> (.listFiles (io/file base-dir dir) filename-filter)
          (filter #(not (.isDirectory ^java.io.File %)))
-         (filter (ignore ignored-files))
+         (filter (cryogen-io/ignore ignored-files))
          (map #(.getName ^java.io.File %)))))
 
 (defn compile-sass-file!
-  "Given a sass file which might be in src-sass directory,
-  output the resulting css in dest-sass. All error handling is
-    done by sh / launching the sass command."
-  [{:keys [src-sass
-           dest-sass
-           path-sass
-           path-compass
-           base-dir]}]
+  "Given a sass file which might be in sass-src directory,
+   output the resulting css in sass-dest. All error handling is
+   done by sh / launching the sass command."
+  [{:keys [sass-src sass-dest sass-path compass-path base-dir]}]
   (shell/with-sh-dir base-dir
-    (if (compass-installed? path-compass)
-      (sh path-sass "--compass" "--update" (str src-sass ":" dest-sass))
-      (sh path-sass "--update" (str src-sass ":" dest-sass)))))
+    (if (compass-installed? compass-path)
+      (sh sass-path "--compass" "--update" (str sass-src ":" sass-dest))
+      (sh sass-path "--update" (str sass-src ":" sass-dest)))))
 
 (defn compile-sass->css!
-  "Given a directory src-sass, looks for all sass files and compiles them into
-dest-sass. Prompts you to install sass if he finds sass files and can't find
-the command. Shows you any problems it comes across when compiling. "
-  [{:keys [src-sass
-           dest-sass
-           path-sass
-           ignored-files
-           base-dir] :as opts}]
-  (when-let [sass-files (seq (find-sass-files base-dir src-sass ignored-files))]
-    (if (sass-installed? path-sass)
-      ;; I found sass files,
-      ;; If sass is installed
+  "Given a directory sass-src, looks for all sass files and compiles them into
+   sass-dest. Prompts you to install sass if he finds sass files and can't find
+   the command. Shows you any problems it comes across when compiling. "
+  [{:keys [sass-src sass-dest sass-path ignored-files base-dir] :as opts}]
+  (when (seq (find-sass-files base-dir sass-src ignored-files))
+    (if (sass-installed? sass-path)
       (do
-        (println "\t" (cyan src-sass) "-->" (cyan dest-sass))
+        (println "\t" (cyan sass-src) "-->" (cyan sass-dest))
         (let [result (compile-sass-file! opts)]
           (if (zero? (:exit result))
-            ;; no problems in sass compilation
             (println "Successfully compiled sass files")
-            ;; else I show the error
             (println (red (:err result))
                      (red (:out result))))))
-      ;; Else I prompt to install Sass
       (println "Sass seems not to be installed, but you have scss / sass files in "
-               src-sass
+               sass-src
                " - You might want to install it here: sass-lang.com"))))
