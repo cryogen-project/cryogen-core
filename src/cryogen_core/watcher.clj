@@ -1,20 +1,20 @@
 (ns cryogen-core.watcher
-  (:require [clojure.java.io :refer [file]]
-            [cryogen-core.io :refer [ignore]]
-            [pandect.algo.md5 :refer [md5]]
+  (:require [clojure.java.io :as io]
+            [clojure.set :as set]
             [hawk.core :as hawk]
-            [clojure.set :as set]))
+            [pandect.algo.md5 :as md5]
+            [cryogen-core.io :as cryogen-io]))
 
 (defn get-assets [path ignored-files]
   (->> path
-       file
+       io/file
        file-seq
        (filter #(not (.isDirectory ^java.io.File %)))
-       (filter (ignore ignored-files))))
+       (filter (cryogen-io/ignore ignored-files))))
 
 (defn checksums [path ignored-files]
   (let [files (get-assets path ignored-files)]
-    (zipmap (map md5 files) files)))
+    (zipmap (map md5/md5 files) files)))
 
 (defn find-changes [old-sums new-sums]
   (let [old-sum-set (-> old-sums keys set)
