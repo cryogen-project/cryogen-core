@@ -2,11 +2,21 @@
   (:require 
     [clojure.string :as s]))
 
-(defn- uri-level [uri]
-  (count (s/split uri #"/")))
+(defn uri-level [uri]
+  (- (count 
+       (s/split uri #"/"))
+     1)
+  )
 
-(defn- filter-pages-for-uri [uri pages]
-  (filter #(s/starts-with? (:uri %) uri) pages))
+(defn filter-pages-for-uri [uri pages]
+  (let [html? (s/ends-with? uri ".html")
+        clean? (s/ends-with? uri "/")
+        clean-uri (cond 
+                    html? (subs uri 0 (- (count uri) 5))
+                    clean? (subs uri 0 (- (count uri) 1))
+                    :default uri)]
+    (filter #(s/starts-with? (:uri %) clean-uri) pages))
+  )
 
 (defn build-nav-map-level
   "builds one level of nav-map and recurs to next level."
