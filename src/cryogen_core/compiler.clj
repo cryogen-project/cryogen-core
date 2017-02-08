@@ -496,7 +496,9 @@
   "Generates all the html and copies over resources specified in the config"
   []
   (println (green "compiling assets..."))
-  (let [{:keys [^String site-url blog-prefix rss-name recent-posts sass-src sass-dest sass-path compass-path keep-files ignored-files previews? clean-urls? debug? author-root-uri] :as config} (read-config)
+  (let [{:keys [^String site-url blog-prefix rss-name recent-posts sass-src sass-dest 
+                sass-path compass-path keep-files ignored-files previews? clean-urls? 
+                debug? author-root-uri] :as config} (read-config)
         posts (add-prev-next (read-posts config))
         pages (add-prev-next (read-pages config))
         home-pages (filter #(boolean (:home? %)) pages)
