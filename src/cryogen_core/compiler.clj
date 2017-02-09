@@ -15,7 +15,7 @@
             [cryogen-core.sitemap :as sitemap]
             [clojure.inspector :as inspector]
             [cryogen-core.toc :as toc]
-            [cryogen-core.navbar-model :as navbar-model])
+            [cryogen-core.hierarchic :as hierarchic])
   (:import java.util.Locale))
 
 (cache-off!)
@@ -512,11 +512,11 @@
                        :latest-posts  latest-posts
                        :navbar-pages  (cond 
                                         (= navbar-model :flat) navbar-pages
-                                        (= navbar-model :hierarchic) (navbar-model/build-nav-map navbar-pages)
+                                        (= navbar-model :hierarchic) (hierarchic/build-hierarchic-map navbar-pages)
                                         )
                        :sidebar-pages (cond 
                                         (= navbar-model :flat) sidebar-pages
-                                        ;(= navbar-model :hierarchic) (build-nav-map navbar-pages)
+                                        (= navbar-model :hierarchic) (hierarchic/build-hierarchic-map sidebar-pages)
                                         )
                        :home-page     (if home-page
                                          home-page

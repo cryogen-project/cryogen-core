@@ -1,7 +1,7 @@
-(ns cryogen-core.navbar-model-test
+(ns cryogen-core.hierarchic-test
   (:require 
     [clojure.test :refer :all]
-    [cryogen-core.navbar-model :as sut]))
+    [cryogen-core.hierarchic :as sut]))
 
 (defn- page [uri page-index] 
   {:uri uri 
@@ -42,7 +42,7 @@
     (is (= 6 (count (sut/filter-pages-for-uri "/pages/nav1.html" pages-dirty))))
     ))
 
-(deftest test-navmap-pages
+(deftest test-hierarchic-pages
   (testing 
     "No pages or posts nothing to copy"
     (let [expected-clean [(enhanced-page 
@@ -65,8 +65,8 @@
                             )] 
           ]        
       (is (= expected-clean
-             (sut/build-nav-map pages-clean)))
+             (sut/build-hierarchic-map pages-clean)))
       (is (= expected-dirty
-             (sut/build-nav-map pages-dirty)))
+             (sut/build-hierarchic-map pages-dirty)))
       )
     ))
