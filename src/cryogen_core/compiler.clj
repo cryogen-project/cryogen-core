@@ -466,7 +466,7 @@
                      (update-in [:post-date-format] (fnil str "yyyy-MM-dd"))
                      (update-in [:keep-files] (fnil seq []))
                      (update-in [:ignored-files] (fnil seq [#"^\.#.*" #".*\.swp$"]))
-                     (update-in [:navbar-model] (fnil str :flat))
+                     (update-in [:navbar-model] (fnil keyword :flat))
                      )]
       (merge
         config
@@ -527,8 +527,12 @@
                        :rss-uri       (cryogen-io/path "/" blog-prefix rss-name)
                        :site-url      (if (.endsWith site-url "/") (.substring site-url 0 (dec (count site-url))) site-url)})]
     (when debug?
+      (println (blue "debug: navbar-model:"))
+      (println "\t-->" (cyan navbar-model))
       (println (blue "debug: navbar-pages:"))
-      (println "\t-->" (cyan navbar-pages))
+      (println "\t-->" (cyan (-> params :navbar-pages)))
+      (println (blue "debug: sidebar-pages:"))
+      (println "\t-->" (cyan (-> params :sidebar-pages)))
       )
     (set-custom-resource-path! (str "file:resources/templates/themes/" theme))
     (cryogen-io/wipe-public-folder keep-files)
