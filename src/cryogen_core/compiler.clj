@@ -514,10 +514,7 @@
                                         (= page-model :flat) navbar-pages
                                         (= page-model :hierarchic) (hierarchic/build-hierarchic-map navbar-pages)
                                         )
-                       :sidebar-pages (cond 
-                                        (= page-model :flat) sidebar-pages
-                                        (= page-model :hierarchic) (hierarchic/build-hierarchic-map sidebar-pages)
-                                        )
+                       :sidebar-pages sidebar-pages
                        :home-page     (if home-page
                                          home-page
                                          (assoc (first latest-posts) :layout "home.html"))                     
@@ -533,6 +530,8 @@
       (println "\t-->" (cyan (-> params :navbar-pages)))
       (println (blue "debug: sidebar-pages:"))
       (println "\t-->" (cyan (-> params :sidebar-pages)))
+      (println (blue "debug: home-page:"))
+      (println "\t-->" (cyan (-> params :home-page)))
       )
     (set-custom-resource-path! (str "file:resources/templates/themes/" theme))
     (cryogen-io/wipe-public-folder keep-files)
