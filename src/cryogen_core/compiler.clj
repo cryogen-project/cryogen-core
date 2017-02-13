@@ -466,7 +466,7 @@
                      (update-in [:post-date-format] (fnil str "yyyy-MM-dd"))
                      (update-in [:keep-files] (fnil seq []))
                      (update-in [:ignored-files] (fnil seq [#"^\.#.*" #".*\.swp$"]))
-                     (update-in [:page-model] (fnil keyword :flat))
+                     (update-in [:navbar-mode] (fnil keyword :flat))
                      )]
       (merge
         config
