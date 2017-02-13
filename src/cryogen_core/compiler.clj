@@ -466,7 +466,7 @@
                      (update-in [:post-date-format] (fnil str "yyyy-MM-dd"))
                      (update-in [:keep-files] (fnil seq []))
                      (update-in [:ignored-files] (fnil seq [#"^\.#.*" #".*\.swp$"]))
-                     (update-in [:page-model] (fnil keyword :flat))
+                     (update-in [:navbar-mode] (fnil keyword :flat))
                      )]
       (merge
         config
@@ -514,10 +514,7 @@
                                         (= page-model :flat) navbar-pages
                                         (= page-model :hierarchic) (hierarchic/build-hierarchic-map navbar-pages)
                                         )
-                       :sidebar-pages (cond 
-                                        (= page-model :flat) sidebar-pages
-                                        (= page-model :hierarchic) (hierarchic/build-hierarchic-map sidebar-pages)
-                                        )
+                       :sidebar-pages sidebar-pages
                        :home-page     (if home-page
                                          home-page
                                          (assoc (first latest-posts) :layout "home.html"))                     
@@ -533,6 +530,8 @@
       (println "\t-->" (cyan (-> params :navbar-pages)))
       (println (blue "debug: sidebar-pages:"))
       (println "\t-->" (cyan (-> params :sidebar-pages)))
+      (println (blue "debug: home-page:"))
+      (println "\t-->" (cyan (-> params :home-page)))
       )
     (set-custom-resource-path! (str "file:resources/templates/themes/" theme))
     (cryogen-io/wipe-public-folder keep-files)
