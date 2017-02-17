@@ -489,7 +489,7 @@
   []
   (println (green "compiling assets..."))
   (let [{:keys [^String site-url blog-prefix rss-name recent-posts sass-dest keep-files ignored-files previews? 
-                author-root-uri theme debug? page-model]
+                author-root-uri theme debug? navbar-mode]
          :as config} (read-config)
         posts        (map klipsify (add-prev-next (read-posts config)))
         posts-by-tag (group-by-tags posts)
@@ -511,8 +511,8 @@
                        :tags          (map (partial tag-info config) (keys posts-by-tag))
                        :latest-posts  latest-posts
                        :navbar-pages  (cond 
-                                        (= page-model :flat) navbar-pages
-                                        (= page-model :hierarchic) (hierarchic/build-hierarchic-map navbar-pages)
+                                        (= navbar-mode :flat) navbar-pages
+                                        (= navbar-mode :hierarchic) (hierarchic/build-hierarchic-map navbar-pages)
                                         )
                        :sidebar-pages sidebar-pages
                        :home-page     (if home-page
@@ -524,8 +524,8 @@
                        :rss-uri       (cryogen-io/path "/" blog-prefix rss-name)
                        :site-url      (if (.endsWith site-url "/") (.substring site-url 0 (dec (count site-url))) site-url)})]
     (when debug?
-      (println (blue "debug: page-model:"))
-      (println "\t-->" (cyan page-model))
+      (println (blue "debug: navbar-mode:"))
+      (println "\t-->" (cyan navbar-mode))
       (println (blue "debug: navbar-pages:"))
       (println "\t-->" (cyan (-> params :navbar-pages)))
       (println (blue "debug: sidebar-pages:"))
