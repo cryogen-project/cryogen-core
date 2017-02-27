@@ -1,5 +1,6 @@
 (ns cryogen-core.compiler-test
-  (:require [clojure.test :refer :all]
+  (:require [clojure.java.io :as io]
+            [clojure.test :refer :all]
             [me.raynes.fs :as fs]
             [cryogen-core.compiler :refer :all]
             [cryogen-core.markup :as m])
@@ -116,3 +117,15 @@ and more content.
         (reset-resources)
         (copy-and-check-markup-folders dirs mu false))))
   (reset-resources))
+
+(deftest fail-test (testing "failure" (is true)))
+
+(defn reader-string [s]
+  (java.io.PushbackReader. (java.io.StringReader. s)))
+
+(deftest test-metadata-parsing
+  (testing "Parsing page/post configuration"
+    (let [valid-metadata (reader-string "{:layout :post :title \"Hello World\"}")
+          invalid-metadata (reader-string "{:layout \"post\" :title \"Hello World\"}")]
+      (is (read-page-meta nil valid-metadata))
+      (is (thrown? Exception (read-page-meta nil invalid-metadata))))))

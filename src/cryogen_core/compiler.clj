@@ -7,6 +7,7 @@
             [selmer.parser :refer [cache-off! render-file]]
             [selmer.util :refer [set-custom-resource-path!]]
             [text-decoration.core :refer :all]
+            [schema.core :as schema]
             [cryogen-core.io :as cryogen-io]
             [cryogen-core.klipse :as klipse]
             [cryogen-core.markup :as m]
@@ -72,13 +73,25 @@
          uri-end  (if clean-urls? (s/replace file-name #"(index)?\.html" "/") file-name)]
      (cryogen-io/path "/" blog-prefix page-uri uri-end))))
 
+(def MetaData
+  {:layout schema/Keyword
+   :title  schema/Str
+   (schema/optional-key :date) schema/Str
+   (schema/optional-key :author) schema/Str
+   (schema/optional-key :tags) [schema/Str]
+   (schema/optional-key :toc) schema/Bool
+   (schema/optional-key :draft?) schema/Bool
+   (schema/optional-key :klipse) schema/Bool})
+
 (defn read-page-meta
   "Returns the clojure map from the top of a markdown page/post"
   [page rdr]
   (try
-    (read rdr)
-    (catch Exception _
-      (throw (IllegalArgumentException. (str "Malformed metadata on page: " page))))))
+    (let [metadata (read rdr)]
+      (schema/validate MetaData metadata)
+      metadata)
+    (catch Exception e
+      (throw e)))) 
 
 (defn page-content
   "Returns a map with the given page's file-name, metadata and content parsed from
