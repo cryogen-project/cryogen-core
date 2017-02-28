@@ -456,33 +456,65 @@
              {:resources     folders
               :ignored-files (map #(re-pattern-from-ext (m/ext %)) (m/markups))}))))
 
-(defn read-config
+(def Config {:site-title  schema/Str
+   :author                                       schema/Str
+   (schema/optional-key :description)            schema/Str
+   :site-url                                     schema/Str
+   (schema/optional-key :post-root)              schema/Str
+   (schema/optional-key :page-root)              schema/Str
+   (schema/optional-key :post-root-uri)          (schema/maybe schema/Str)
+   (schema/optional-key :page-root-uri)          (schema/maybe schema/Str)
+   (schema/optional-key :tag-root-uri)           schema/Str
+   (schema/optional-key :author-root-uri)        schema/Str
+   (schema/optional-key :blog-prefix)            schema/Str
+   (schema/optional-key :rss-name)               schema/Str
+   (schema/optional-key :rss-filters)            [schema/Str]
+   :recent-posts                                 schema/Int
+   (schema/optional-key :post-date-format)       schema/Str
+   (schema/optional-key :sass-src)               (schema/maybe schema/Str)
+   (schema/optional-key :sass-dest)              (schema/maybe schema/Str)
+   (schema/optional-key :sass-path)              schema/Str
+   (schema/optional-key :compass-path)           schema/Str
+   (schema/optional-key :theme)                  schema/Str
+   (schema/optional-key :resources)              [schema/Str]
+   (schema/optional-key :keep-files)             [schema/Str]
+   (schema/optional-key :disqus?)                schema/Bool
+   (schema/optional-key :disqus-shortname)       schema/Str
+   (schema/optional-key :ignored-files)          [schema/Regex]
+   :posts-per-page                               schema/Int
+   :blocks-per-preview                           schema/Int
+   (schema/optional-key :previews?)              schema/Bool
+   (schema/optional-key :clean-urls?)            schema/Bool
+   (schema/optional-key :hide-future-posts?)     schema/Bool
+   (schema/optional-key :klipse)                 {}
+   (schema/optional-key :debug?)                 schema/Bool})
+
+(defn process-config
   "Reads the config file"
-  []
+  [config]
   (try
-    (let [config (-> "templates/config.edn"
-                     cryogen-io/get-resource
-                     slurp
-                     read-string
-                     (update-in [:blog-prefix] (fnil str ""))
-                     (update-in [:page-root] (fnil str ""))
-                     (update-in [:post-root] (fnil str ""))
-                     (update-in [:tag-root-uri] (fnil str ""))
-                     (update-in [:rss-name] (fnil str "rss.xml"))
-                     (update-in [:rss-filters] (fnil seq []))
-                     (update-in [:sass-src] (fnil str "css"))
-                     (update-in [:sass-dest] (fnil str "css"))
-                     (update-in [:sass-path] (fnil str "sass"))
-                     (update-in [:compass-path] (fnil str "compass"))
-                     (update-in [:post-date-format] (fnil str "yyyy-MM-dd"))
-                     (update-in [:keep-files] (fnil seq []))
-                     (update-in [:ignored-files] (fnil seq [#"^\.#.*" #".*\.swp$"])))]
-      (merge
-        config
-        {:page-root-uri (root-uri :page-root-uri config)
-         :post-root-uri (root-uri :post-root-uri config)}))
-    (catch Exception _
-      (throw (IllegalArgumentException. "Failed to parse config.edn")))))
+    (schema/validate Config config)
+    (-> config
+        (update-in [:blog-prefix]      (fnil str ""))
+        (update-in [:page-root]        (fnil str ""))
+        (update-in [:post-root]        (fnil str ""))
+        (update-in [:tag-root-uri]     (fnil str ""))
+        (update-in [:rss-name]         (fnil str "rss.xml"))
+        (update-in [:rss-filters]      (fnil seq []))
+        (update-in [:sass-src]         (fnil str "css"))
+        (update-in [:sass-dest]        (fnil str "css"))
+        (update-in [:sass-path]        (fnil str "sass"))
+        (update-in [:compass-path]     (fnil str "compass"))
+        (update-in [:post-date-format] (fnil str "yyyy-MM-dd"))
+        (update-in [:keep-files]       (fnil seq []))
+        (update-in [:ignored-files]    (fnil seq [#"^\.#.*" #".*\.swp$"]))
+        (assoc :page-root-uri (root-uri :page-root-uri config)
+               :post-root-uri (root-uri :post-root-uri config)))
+  (catch Exception e (throw e))))
+
+(defn read-config []
+  (-> "templates/config.edn" 
+      cryogen-io/get-resource slurp read-string process-config))
 
 (defn klipsify
   "Add the klipse html under the :klipse key and adds nohighlight
@@ -498,6 +530,7 @@
   []
   (println (green "compiling assets..."))
   (let [{:keys [^String site-url blog-prefix rss-name recent-posts sass-dest keep-files ignored-files previews? author-root-uri theme]
+
          :as   config} (read-config)
         posts        (map klipsify (add-prev-next (read-posts config)))
         posts-by-tag (group-by-tags posts)
@@ -571,3 +604,5 @@
                 (instance? clojure.lang.ExceptionInfo e))
           (println (red "Error:") (yellow (.getMessage e)))
           (write-exception e))))))
+
+
