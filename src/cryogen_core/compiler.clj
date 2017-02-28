@@ -73,6 +73,13 @@
          uri-end  (if clean-urls? (s/replace file-name #"(index)?\.html" "/") file-name)]
      (cryogen-io/path "/" blog-prefix page-uri uri-end))))
 
+(def Klipse 
+  {(schema/optional-key :settings)  schema/Any
+   (schema/optional-key :js-src)    {:min schema/Str :non-min schema/Str}
+   (schema/optional-key :js)        (schema/enum :min :non-min)
+   (schema/optional-key :css-base)  schema/Str
+   (schema/optional-key :css-theme) schema/Str})
+
 (def MetaData
   {:layout schema/Keyword
    :title  schema/Str
@@ -81,7 +88,10 @@
    (schema/optional-key :tags) [schema/Str]
    (schema/optional-key :toc) schema/Bool
    (schema/optional-key :draft?) schema/Bool
-   (schema/optional-key :klipse) schema/Bool})
+   (schema/optional-key :klipse) Klipse
+   (schema/optional-key :home?) schema/Bool
+   (schema/optional-key :page-index) schema/Int
+   (schema/optional-key :navbar?) schema/Bool})
 
 (defn read-page-meta
   "Returns the clojure map from the top of a markdown page/post"
@@ -456,7 +466,8 @@
              {:resources     folders
               :ignored-files (map #(re-pattern-from-ext (m/ext %)) (m/markups))}))))
 
-(def Config {:site-title  schema/Str
+(def Config 
+   {:site-title  schema/Str
    :author                                       schema/Str
    (schema/optional-key :description)            schema/Str
    :site-url                                     schema/Str
@@ -486,7 +497,7 @@
    (schema/optional-key :previews?)              schema/Bool
    (schema/optional-key :clean-urls?)            schema/Bool
    (schema/optional-key :hide-future-posts?)     schema/Bool
-   (schema/optional-key :klipse)                 {}
+   (schema/optional-key :klipse)                 Klipse
    (schema/optional-key :debug?)                 schema/Bool})
 
 (defn process-config
