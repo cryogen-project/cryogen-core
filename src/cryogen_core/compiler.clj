@@ -466,7 +466,7 @@
                      (update-in [:post-date-format] (fnil str "yyyy-MM-dd"))
                      (update-in [:keep-files] (fnil seq []))
                      (update-in [:ignored-files] (fnil seq [#"^\.#.*" #".*\.swp$"]))
-                     (update-in [:navbar-mode] (fnil keyword :flat))
+                     (update-in [:pages-mode] (fnil keyword :flat))
                      )]
       (merge
         config
@@ -489,7 +489,7 @@
   []
   (println (green "compiling assets..."))
   (let [{:keys [^String site-url blog-prefix rss-name recent-posts sass-dest keep-files ignored-files previews? 
-                author-root-uri theme debug? navbar-mode]
+                author-root-uri theme debug? pages-mode]
          :as config} (read-config)
         posts        (map klipsify (add-prev-next (read-posts config)))
         posts-by-tag (group-by-tags posts)
@@ -502,19 +502,16 @@
         other-pages  (->> pages
                           (remove #{home-page})
                           (add-prev-next))
-        [navbar-pages
-         sidebar-pages] (group-pages other-pages)
         params (merge config
                       {:today         (java.util.Date.)
                        :title         (:site-title config)
                        :active-page   "home"
                        :tags          (map (partial tag-info config) (keys posts-by-tag))
                        :latest-posts  latest-posts
-                       :navbar-pages  (cond 
-                                        (= navbar-mode :flat) navbar-pages
-                                        (= navbar-mode :hierarchic) (hierarchic/build-hierarchic-map navbar-pages)
+                       :pages         (cond 
+                                        (= pages-mode :flat) other-pages
+                                        (= pages-mode :hierarchic) (hierarchic/build-hierarchic-map other-pages)
                                         )
-                       :sidebar-pages sidebar-pages
                        :home-page     (if home-page
                                          home-page
                                          (assoc (first latest-posts) :layout "home.html"))                     
@@ -524,12 +521,10 @@
                        :rss-uri       (cryogen-io/path "/" blog-prefix rss-name)
                        :site-url      (if (.endsWith site-url "/") (.substring site-url 0 (dec (count site-url))) site-url)})]
     (when debug?
-      (println (blue "debug: navbar-mode:"))
-      (println "\t-->" (cyan navbar-mode))
-      (println (blue "debug: navbar-pages:"))
-      (println "\t-->" (cyan (-> params :navbar-pages)))
-      (println (blue "debug: sidebar-pages:"))
-      (println "\t-->" (cyan (-> params :sidebar-pages)))
+      (println (blue "debug: pages-mode:"))
+      (println "\t-->" (cyan pages-mode))
+      (println (blue "debug: pages:"))
+      (println "\t-->" (cyan (-> params :pages)))
       (println (blue "debug: home-page:"))
       (println "\t-->" (cyan (-> params :home-page)))
       )
