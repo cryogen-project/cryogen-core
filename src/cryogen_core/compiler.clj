@@ -466,7 +466,7 @@
                      (update-in [:post-date-format] (fnil str "yyyy-MM-dd"))
                      (update-in [:keep-files] (fnil seq []))
                      (update-in [:ignored-files] (fnil seq [#"^\.#.*" #".*\.swp$"]))
-                     (update-in [:pages-mode] (fnil keyword :flat))
+                     (update-in [:page-model] (fnil keyword :flat))
                      )]
       (merge
         config
@@ -489,7 +489,7 @@
   []
   (println (green "compiling assets..."))
   (let [{:keys [^String site-url blog-prefix rss-name recent-posts sass-dest keep-files ignored-files previews? 
-                author-root-uri theme debug? pages-mode]
+                author-root-uri theme debug? page-model]
          :as config} (read-config)
         posts        (map klipsify (add-prev-next (read-posts config)))
         posts-by-tag (group-by-tags posts)
@@ -509,8 +509,8 @@
                        :tags          (map (partial tag-info config) (keys posts-by-tag))
                        :latest-posts  latest-posts
                        :pages         (cond 
-                                        (= pages-mode :flat) other-pages
-                                        (= pages-mode :hierarchic) (hierarchic/build-hierarchic-map other-pages)
+                                        (= page-model :flat) other-pages
+                                        (= page-model :hierarchic) (hierarchic/build-hierarchic-map other-pages)
                                         )
                        :home-page     (if home-page
                                          home-page
@@ -521,8 +521,8 @@
                        :rss-uri       (cryogen-io/path "/" blog-prefix rss-name)
                        :site-url      (if (.endsWith site-url "/") (.substring site-url 0 (dec (count site-url))) site-url)})]
     (when debug?
-      (println (blue "debug: pages-mode:"))
-      (println "\t-->" (cyan pages-mode))
+      (println (blue "debug: page-model:"))
+      (println "\t-->" (cyan page-model))
       (println (blue "debug: pages:"))
       (println "\t-->" (cyan (-> params :pages)))
       (println (blue "debug: home-page:"))
