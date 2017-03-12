@@ -251,7 +251,9 @@
                                        :home            false
                                        :servlet-context (cryogen-io/path "/" blog-prefix "/")
                                        :page            page
-                                       :uri             uri}))))))
+                                       :uri             uri})))
+      (compile-pages params (:children page)))    
+    ))
 
 (defn compile-posts
   "Compiles all the posts into html and spits them out into the public folder"
@@ -490,28 +492,29 @@
   (println (green "compiling assets..."))
   (let [{:keys [^String site-url blog-prefix rss-name recent-posts sass-dest keep-files ignored-files previews? 
                 author-root-uri theme debug? page-model]
-         :as config} (read-config)
-        posts        (map klipsify (add-prev-next (read-posts config)))
-        posts-by-tag (group-by-tags posts)
-        posts        (tag-posts posts config)
-        latest-posts (->> posts (take recent-posts) vec)
-        pages        (map klipsify (read-pages config))
-        home-page    (->> pages
-                          (filter #(boolean (:home? %)))
-                          (first))
-        other-pages  (->> pages
-                          (remove #{home-page})
-                          (add-prev-next))
+         :as config}     (read-config)
+        posts            (map klipsify (add-prev-next (read-posts config)))
+        posts-by-tag     (group-by-tags posts)
+        posts            (tag-posts posts config)
+        latest-posts     (->> posts (take recent-posts) vec)
+        klipsified-pages (map klipsify (read-pages config))
+        modelled-pages   (cond 
+                           (= page-model :flat) klipsified-pages
+                           (= page-model :hierarchic) (hierarchic/build-hierarchic-map klipsified-pages)
+                           )
+        home-page        (->> modelled-pages
+                           (filter #(boolean (:home? %)))
+                           (first))
+        other-pages      (->> modelled-pages
+                              (remove #{home-page})
+                              (add-prev-next))
         params (merge config
                       {:today         (java.util.Date.)
                        :title         (:site-title config)
                        :active-page   "home"
                        :tags          (map (partial tag-info config) (keys posts-by-tag))
                        :latest-posts  latest-posts
-                       :pages         (cond 
-                                        (= page-model :flat) other-pages
-                                        (= page-model :hierarchic) (hierarchic/build-hierarchic-map other-pages)
-                                        )
+                       :pages         other-pages
                        :home-page     (if home-page
                                          home-page
                                          (assoc (first latest-posts) :layout "home.html"))                     
@@ -523,8 +526,6 @@
     (when debug?
       (println (blue "debug: page-model:"))
       (println "\t-->" (cyan page-model))
-      (println (blue "debug: pages:"))
-      (println "\t-->" (cyan (-> params :pages)))
       (println (blue "debug: home-page:"))
       (println "\t-->" (cyan (-> params :home-page)))
       )
@@ -535,7 +536,7 @@
     (println (blue "copying resources"))
     (cryogen-io/copy-resources config)
     (copy-resources-from-markup-folders config)
-    (compile-pages params other-pages)
+    (compile-pages params modelled-pages)
     (compile-posts params posts)
     (compile-tags params posts-by-tag)
     (compile-tags-page params)

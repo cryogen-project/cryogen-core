@@ -19,7 +19,7 @@
   )
 
 (defn build-hierarchic-level
-  "builds one level of nav-map and recurs to next level."
+  "builds one level of hierarchic tree recurs to next level."
   [parent-uri pages]
   (let [current-level (+ 1 (uri-level parent-uri))
         pages-of-parent (filter-pages-for-uri parent-uri pages)
@@ -36,7 +36,7 @@
     ))
 
 (defn build-hierarchic-map
-  "builds a nav-map from pages"
+  "builds a hierarchic tree from pages"
   [pages]
   (let [sorted-pages (sort-by :uri pages)]
      (build-hierarchic-level "/pages/" sorted-pages)
