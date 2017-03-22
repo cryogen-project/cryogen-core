@@ -2,6 +2,23 @@
   (:require 
     [clojure.string :as s]))
 
+(defn normalized-page-root-uri [page-root-uri]
+  (cond 
+    (= "" page-root-uri) ""
+    (and 
+      (s/starts-with? page-root-uri "/")
+      (s/ends-with? page-root-uri "/")) page-root-uri
+    (and 
+      (s/starts-with? page-root-uri "/")
+      (not (s/ends-with? page-root-uri "/"))) (str page-root-uri "/")
+    (and 
+      (not (s/starts-with? page-root-uri "/"))
+      (s/ends-with? page-root-uri "/")) (str "/" page-root-uri)
+    (and 
+      (not (s/starts-with? page-root-uri "/"))
+      (not (s/ends-with? page-root-uri "/"))) (str "/" page-root-uri "/"))
+  )
+
 (defn uri-level [uri]
   (- (count 
        (s/split uri #"/"))
@@ -37,7 +54,7 @@
 
 (defn build-hierarchic-map
   "builds a hierarchic tree from pages"
-  [pages]
+  [page-root-uri pages]
   (let [sorted-pages (sort-by :uri pages)]
-     (build-hierarchic-level "/pages/" sorted-pages)
+     (build-hierarchic-level (normalized-page-root-uri page-root-uri) sorted-pages)
    ))
