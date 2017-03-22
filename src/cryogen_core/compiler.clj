@@ -491,7 +491,7 @@
   []
   (println (green "compiling assets..."))
   (let [{:keys [^String site-url blog-prefix rss-name recent-posts sass-dest keep-files ignored-files previews? 
-                author-root-uri theme debug? page-model]
+                author-root-uri theme debug? page-model page-root-uri ]
          :as config}     (read-config)
         posts            (map klipsify (add-prev-next (read-posts config)))
         posts-by-tag     (group-by-tags posts)
@@ -500,7 +500,7 @@
         klipsified-pages (map klipsify (read-pages config))
         modelled-pages   (cond 
                            (= page-model :flat) klipsified-pages
-                           (= page-model :hierarchic) (hierarchic/build-hierarchic-map klipsified-pages)
+                           (= page-model :hierarchic) (hierarchic/build-hierarchic-map page-root-uri klipsified-pages)
                            )
         home-page        (->> modelled-pages
                            (filter #(boolean (:home? %)))
