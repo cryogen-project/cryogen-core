@@ -23,8 +23,8 @@
       false)))
 
 (defn find-sass-files
-  "Given a Diretory, gets files, Filtered to those having scss or sass
-   extention. Ignores files matching any ignored regexps."
+  "Given a directory, gets files, filtered to those having scss or sass
+   extension. Ignores files matching any ignored regexps."
   [base-dir dir ignored-files]
   (let [^java.io.FilenameFilter filename-filter (cryogen-io/match-re-filter #"(?i:s[ca]ss$)")]
     (->> (.listFiles (io/file base-dir dir) filename-filter)
@@ -32,10 +32,10 @@
          (filter (cryogen-io/ignore ignored-files))
          (map #(.getName ^java.io.File %)))))
 
-(defn compile-sass-file!
-  "Given a sass file which might be in sass-src directory,
-   output the resulting css in the same dir. All error handling is
-   done by sh / launching the sass command."
+(defn compile-sass-dir!
+  "Given a sass directory (or file), output the resulting CSS in the
+   same dir. All error handling is done by sh / launching the sass
+   command."
   [{:keys [sass-dir sass-path compass-path base-dir]}]
   (shell/with-sh-dir base-dir
     (if (compass-installed? compass-path)
@@ -43,9 +43,10 @@
       (sh sass-path "--update" sass-dir))))
 
 (defn compile-sass->css!
-  "Given a directory(s) sass-src, looks for all sass files and compiles them.
-   Prompts you to install sass if it finds sass files but can't find
-   the command. Shows you any problems it comes across when compiling. "
+  "Given a directory or directories in sass-src, looks for all Sass
+   files and compiles them. Prompts you to install sass if it finds
+   Sass files but can't find the command. Shows you any problems it
+   comes across when compiling. "
   [{:keys [sass-src sass-path ignored-files base-dir] :as opts}]
   (if (not (coll? sass-src))
     (recur (assoc opts :sass-src [sass-src]))
@@ -54,7 +55,7 @@
         (if (sass-installed? sass-path)
           (do
             (println "\t" (cyan sass-dir) "-->" (cyan sass-dir))
-            (let [result (compile-sass-file! (assoc opts :sass-dir sass-dir))]
+            (let [result (compile-sass-dir! (assoc opts :sass-dir sass-dir))]
               (if (zero? (:exit result))
                 (println "Successfully compiled sass files")
                 (println (red (:err result))

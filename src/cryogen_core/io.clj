@@ -77,7 +77,7 @@
           target (path public blog-prefix (fs/base-name resource))]
       (cond
         (not (.exists (io/file src)))
-        (or (= resource "css") (throw (IllegalArgumentException. (str "resource " src " not found"))))
+        (throw (IllegalArgumentException. (str "resource " src " not found")))
         (.isDirectory (io/file src))
         (copy-dir src target ignored-files)
         :else
