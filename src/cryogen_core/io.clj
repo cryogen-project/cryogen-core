@@ -1,6 +1,7 @@
 (ns cryogen-core.io
   (:require [clojure.java.io :as io]
             [clojure.string :as s]
+            [text-decoration.core :refer :all]
             [me.raynes.fs :as fs]))
 
 (def public "resources/public")
@@ -75,6 +76,7 @@
   (doseq [resource resources]
     (let [src (str "resources/templates/" resource)
           target (path public blog-prefix (fs/base-name resource))]
+      (println "\t" (cyan src) "-->" (cyan target))
       (cond
         (not (.exists (io/file src)))
         (throw (IllegalArgumentException. (str "resource " src " not found")))
