@@ -6,7 +6,7 @@
 (def public "resources/public")
 
 (defn path
-  "Creates path from given parts, ignore empty elements" 
+  "Creates path from given parts, ignore empty elements"
   [& path-parts]
   (->> path-parts
        (remove s/blank?)
@@ -77,7 +77,7 @@
           target (path public blog-prefix (fs/base-name resource))]
       (cond
         (not (.exists (io/file src)))
-        (throw (IllegalArgumentException. (str "resource " src " not found")))
+        (or (= resource "css") (throw (IllegalArgumentException. (str "resource " src " not found"))))
         (.isDirectory (io/file src))
         (copy-dir src target ignored-files)
         :else
