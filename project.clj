@@ -4,6 +4,7 @@
             :license {:name "Eclipse Public License"
                       :url  "http://www.eclipse.org/legal/epl-v10.html"}
             :dependencies [[org.clojure/clojure "1.8.0"]
+                           [prismatic/schema "1.1.3"]
                            [camel-snake-kebab "0.4.0"]
                            [cheshire "5.7.0"]
                            [clj-rss "0.2.3"]
