@@ -131,36 +131,39 @@ and more content.
       (is (thrown? Exception (read-page-meta nil invalid-metadata))))))
 
 (def default-config
-  {:site-title         "Lambda Funk"
-   :author             "Nicholas Bardy"
-   :description        "Programming, mostly"
-   :site-url           "http://lambdafunk.com/"
-   :post-root          "posts"
-   :page-root          "pages"
-   :post-root-uri      "posts-output"
-   :page-root-uri      "pages-output"
-   :tag-root-uri       "tags-output"
-   :author-root-uri    "authors-output"
-   :blog-prefix        "/"
-   :rss-name           "feed.xml"
-   :rss-filters        []
-   :recent-posts       3
-   :post-date-format   "yyyy-MM-dd"
-   :sass-src           nil
-   :sass-dest          nil
-   :sass-path          "sass"
-   :compass-path       "compass"
-   :theme              "custom"
-   :resources          ["img"]
-   :keep-files         [".git"]
-   :disqus?            false
-   :disqus-shortname   ""
-   :ignored-files      [#"\.#.*" #".*\.swp$"]
-   :posts-per-page     5
-   :blocks-per-preview 2
-   :previews?          false
-   :clean-urls?        true
-   :hide-future-posts? true})
+  {:site-title           "My Awesome Blog"
+   :author               "Bob Bobbert"
+   :description          "This blog is awesome"
+   :site-url             "http://blogawesome.com/"
+   :post-root            "posts"
+   :page-root            "pages"
+   :post-root-uri        "posts-output"
+   :page-root-uri        "pages-output"
+   :tag-root-uri         "tags-output"
+   :author-root-uri      "authors-output"
+   :blog-prefix          "/blog"
+   :rss-name             "feed.xml"
+   :rss-filters          ["cryogen"]
+   :recent-posts         3
+   :post-date-format     "yyyy-MM-dd"
+   :archive-group-format "yyyy MMMM"
+   :sass-src             ""
+   :sass-dest            nil
+   :sass-path            "sass"
+   :compass-path         "compass"
+   :theme                "blue"
+   :resources            ["img"]
+   :keep-files           [".git"]
+   :disqus?              false
+   :disqus-shortname     ""
+   :ignored-files        [#"\.#.*" #".*\.swp$"]
+   :posts-per-page       5
+   :blocks-per-preview   2
+   :previews?            false
+   :clean-urls?          true
+   :hide-future-posts?   true
+   :klipse               {}
+   :debug?               false})
 
 (deftest test-config-parsing
   (testing "Parsing configuration file"
