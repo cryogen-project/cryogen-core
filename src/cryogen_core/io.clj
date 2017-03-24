@@ -1,17 +1,17 @@
 (ns cryogen-core.io
   (:require [clojure.java.io :as io]
-            [clojure.string :as s]
+            [clojure.string :as string]
             [me.raynes.fs :as fs]))
 
 (def public "resources/public")
 
 (defn path
-  "Creates path from given parts, ignore empty elements" 
+  "Creates path from given parts, ignore empty elements"
   [& path-parts]
   (->> path-parts
-       (remove s/blank?)
-       (s/join "/")
-       (#(s/replace % #"/+" "/"))))
+       (remove string/blank?)
+       (string/join "/")
+       (#(string/replace % #"/+" "/"))))
 
 (defn re-filter [bool-fn re & other-res]
   (let [res (conj other-res re)]
@@ -64,7 +64,7 @@
 (defn copy-dir [src target ignored-files]
   (fs/mkdirs target)
   (let [^java.io.FilenameFilter filename-filter (apply reject-re-filter ignored-files)
-        files (.listFiles (io/file src) filename-filter)]
+        files                                   (.listFiles (io/file src) filename-filter)]
     (doseq [^java.io.File f files]
       (let [out (io/file target (.getName f))]
         (if (.isDirectory f)
@@ -73,7 +73,7 @@
 
 (defn copy-resources [{:keys [blog-prefix resources ignored-files]}]
   (doseq [resource resources]
-    (let [src (str "resources/templates/" resource)
+    (let [src    (str "resources/templates/" resource)
           target (path public blog-prefix (fs/base-name resource))]
       (cond
         (not (.exists (io/file src)))
