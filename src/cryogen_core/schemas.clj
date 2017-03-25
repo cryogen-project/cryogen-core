@@ -40,7 +40,7 @@
    :recent-posts                          s/Int
    :post-date-format                      s/Str
    (s/optional-key :archive-group-format) s/Str
-   (s/optional-key :sass-src)             s/Str
+   (s/optional-key :sass-src)             [s/Str]
    (s/optional-key :sass-path)            s/Str
    (s/optional-key :compass-path)         s/Str
    :theme                                 s/Str

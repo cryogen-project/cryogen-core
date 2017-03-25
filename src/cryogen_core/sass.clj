@@ -37,29 +37,27 @@
    same dir. All error handling is done by sh / launching the sass
    command."
   [{:keys [sass-dir sass-path compass-path base-dir]}]
-  (shell/with-sh-dir base-dir
+  (shell/with-sh-dir
+    base-dir
     (if (compass-installed? compass-path)
       (sh sass-path "--compass" "--update" sass-dir)
       (sh sass-path "--update" sass-dir))))
 
 (defn compile-sass->css!
-  "Given a directory or directories in sass-src, looks for all Sass
-   files and compiles them. Prompts you to install sass if it finds
-   Sass files but can't find the command. Shows you any problems it
-   comes across when compiling. "
+  "Given a directory or directories in sass-src, looks for all Sass files and compiles them.
+   Prompts you to install sass if it finds Sass files but can't find the command. Shows you
+   any problems it comes across when compiling. "
   [{:keys [sass-src sass-path ignored-files base-dir] :as opts}]
-  (let [sass-src (if (coll? sass-src) sass-src [sass-src])]
-    (if (and (not (empty? sass-src))
-             (not (sass-installed? sass-path)))
-      (println (red (str "Sass seems not to be installed, but you have scss / sass files in "
-                         sass-src
-                         " - You might want to install it here: sass-lang.com")))
-      (doseq [sass-dir sass-src]
-        (when (seq (find-sass-files base-dir sass-dir ignored-files))
-          (do
-            (println "\t" (cyan sass-dir) "-->" (cyan sass-dir))
-            (let [result (compile-sass-dir! (assoc opts :sass-dir sass-dir))]
-              (if (zero? (:exit result))
-                (println "Successfully compiled sass files")
-                (println (red (:err result))
-                         (red (:out result)))))))))))
+  (if (and (not (empty? sass-src))
+           (not (sass-installed? sass-path)))
+    (println
+      (red (str "Sass seems not to be installed, but you have scss / sass files in "
+                sass-src
+                " - You might want to install it here: sass-lang.com")))
+    (doseq [sass-dir sass-src]
+      (when (seq (find-sass-files base-dir sass-dir ignored-files))
+        (println "\t" (cyan sass-dir) "-->" (cyan sass-dir))
+        (let [result (compile-sass-dir! (assoc opts :sass-dir sass-dir))]
+          (if-not (zero? (:exit result))
+            (println (red (:err result))
+                     (red (:out result)))))))))

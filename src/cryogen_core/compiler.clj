@@ -454,7 +454,7 @@
     (s/validate schemas/Config config)
     (-> config
         (update-in [:tag-root-uri] (fnil identity ""))
-        (update-in [:sass-src] (fnil identity "css"))
+        (update-in [:sass-src] (fnil identity ["css"]))
         (update-in [:sass-path] (fnil identity "sass"))
         (update-in [:compass-path] (fnil identity "compass"))
         (assoc :page-root-uri (root-uri :page-root-uri config)

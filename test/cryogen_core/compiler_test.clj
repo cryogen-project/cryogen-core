@@ -1,6 +1,6 @@
 (ns cryogen-core.compiler-test
   (:require [clojure.java.io :as io]
-            [clojure.test :refer :all] 
+            [clojure.test :refer :all]
             [me.raynes.fs :as fs]
             [cryogen-core.compiler :refer :all]
             [cryogen-core.markup :as m])
@@ -147,7 +147,7 @@ and more content.
    :recent-posts         3
    :post-date-format     "yyyy-MM-dd"
    :archive-group-format "yyyy MMMM"
-   :sass-src             ""
+   :sass-src             []
    :sass-dest            nil
    :sass-path            "sass"
    :compass-path         "compass"
