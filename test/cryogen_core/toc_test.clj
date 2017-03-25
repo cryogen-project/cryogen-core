@@ -1,6 +1,6 @@
 (ns cryogen-core.toc-test
   (:require [clojure.test :refer :all]
-            [clojure.string :as s]
+            [clojure.string :as string]
             [net.cgrand.enlive-html :as enlive]
             [hiccup.core :as hiccup]
             [cryogen-core.toc :refer :all]))
@@ -86,9 +86,9 @@
                (parse-to-headings)
                (build-toc-tree)
                (build-toc :ul)))
-        (s/join "" ["Inner headers can be more indented, "
-                    "but outer headers cannot be less indented "
-                    "than the original header."]))))
+        (string/join "" ["Inner headers can be more indented, "
+                         "but outer headers cannot be less indented "
+                         "than the original header."]))))
 
 
 (deftest test-generate-toc

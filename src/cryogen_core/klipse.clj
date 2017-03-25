@@ -1,8 +1,9 @@
 (ns cryogen-core.klipse
-  (:require [clojure.string :as str]
-            [camel-snake-kebab.core :refer [->snake_case_string ->camelCaseString]]
-            [cheshire.core :as json]
-            [net.cgrand.enlive-html :as enlive]))
+  (:require
+    [camel-snake-kebab.core :refer [->snake_case_string ->camelCaseString]]
+    [cheshire.core :as json]
+    [clojure.string :as string]
+    [net.cgrand.enlive-html :as enlive]))
 
 ;;;;;;;;;;;
 ;; utils
@@ -15,11 +16,13 @@
 (defn update-existing
   "Like clojure.core/update, but returns m untouched if it doesn't contain k"
   [m k f & args]
-  (if (contains? m k) (apply update m k f args) m))
+  (if (contains? m k)
+    (apply update m k f args)
+    m))
 
 (def map-or-nil? (some-fn map? nil?))
 
-(defn  deep-merge
+(defn deep-merge
   "Like clojure.core/merge, but also merges nested maps under the same key."
   [& ms]
   (apply merge-with
@@ -46,7 +49,7 @@
        enlive/html-snippet
        (filter-html-elems (comp #{:code} :tag))
        (keep (comp :class :attrs))
-       (mapcat #(str/split % #" "))))
+       (mapcat #(string/split % #" "))))
 
 ;;;;;;;;;;;;
 ;; klipse
@@ -54,7 +57,7 @@
 (defn eval-classes
   "Takes the :settings map and returns all values that are css class selectors."
   [settings]
-  (filter #(str/starts-with? % ".") (vals settings)))
+  (filter #(string/starts-with? % ".") (vals settings)))
 
 (defn tag-nohighlight
   "Takes html as a string and a coll of class-selectors and adds
@@ -62,16 +65,14 @@
   [html settings]
   (letfn [(tag [h clas]
             (enlive/sniptest h
-              [(keyword (str "code" clas))]
-              (fn [x]
-                (update-in x [:attrs :class] #(str % " nohighlight")))))]
+                             [(keyword (str "code" clas))]
+                             (fn [x]
+                               (update-in x [:attrs :class] #(str % " nohighlight")))))]
     (reduce tag html (eval-classes settings))))
 
 (def defaults
-  {:js-src
-   {:min "https://storage.googleapis.com/app.klipse.tech/plugin_prod/js/klipse_plugin.min.js"
-    :non-min "https://storage.googleapis.com/app.klipse.tech/plugin/js/klipse_plugin.js"}
-
+  {:js-src   {:min     "https://storage.googleapis.com/app.klipse.tech/plugin_prod/js/klipse_plugin.min.js"
+              :non-min "https://storage.googleapis.com/app.klipse.tech/plugin/js/klipse_plugin.js"}
    :css-base "https://storage.googleapis.com/app.klipse.tech/css/codemirror.css"})
 
 ;; This needs to be updated whenever a new clojure selector is introduced.
@@ -87,7 +88,7 @@
   [normalized-settings]
   (reduce (fn [classes selector]
             (if-let [klass (get normalized-settings selector)]
-              (conj classes (->> klass rest (apply str))) ;; Strip the leading .
+              (conj classes (->> klass rest (apply str)))   ;; Strip the leading .
               classes))
           #{} clojure-selectors))
 
@@ -122,8 +123,9 @@
   [config html]
   (if (:js config)
     config
-    (assoc config :js
-           (if (clojure-eval? (:settings config) html) :non-min :min))))
+    (assoc config
+      :js
+      (if (clojure-eval? (:settings config) html) :non-min :min))))
 
 (defn include-css [href]
   (str "<link rel=\"stylesheet\" type=\"text/css\" href=" (pr-str href) ">"))

@@ -1,5 +1,5 @@
 (ns cryogen-core.markup
-  (:require [clojure.string :as s]))
+  (:require [clojure.string :as string]))
 
 (defonce markup-registry (atom []))
 
@@ -15,9 +15,9 @@
   "Injects the blog prefix in front of any local links
     ex. <img src='/img/cryogen.png'/> becomes <img src='/blog/img/cryogen.png'/>"
   [blog-prefix text]
-  (if (s/blank? blog-prefix)
+  (if (string/blank? blog-prefix)
     text
-    (s/replace text #"href=.?/|src=.?/" #(str (subs % 0 (dec (count %))) blog-prefix "/"))))
+    (string/replace text #"href=.?/|src=.?/" #(str (subs % 0 (dec (count %))) blog-prefix "/"))))
 
 (defn markups
   "Return a vector of Markup implementations. This is the primary entry point

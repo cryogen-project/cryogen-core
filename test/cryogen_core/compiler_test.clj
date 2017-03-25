@@ -1,5 +1,6 @@
 (ns cryogen-core.compiler-test
-  (:require [clojure.test :refer :all]
+  (:require [clojure.java.io :as io]
+            [clojure.test :refer :all] 
             [me.raynes.fs :as fs]
             [cryogen-core.compiler :refer :all]
             [cryogen-core.markup :as m])
@@ -116,3 +117,55 @@ and more content.
         (reset-resources)
         (copy-and-check-markup-folders dirs mu false))))
   (reset-resources))
+
+(deftest fail-test (testing "failure" (is true)))
+
+(defn reader-string [s]
+  (java.io.PushbackReader. (java.io.StringReader. s)))
+
+(deftest test-metadata-parsing
+  (testing "Parsing page/post configuration"
+    (let [valid-metadata (reader-string "{:layout :post :title \"Hello World\"}")
+          invalid-metadata (reader-string "{:layout \"post\" :title \"Hello World\"}")]
+      (is (read-page-meta nil valid-metadata))
+      (is (thrown? Exception (read-page-meta nil invalid-metadata))))))
+
+(def default-config
+  {:site-title           "My Awesome Blog"
+   :author               "Bob Bobbert"
+   :description          "This blog is awesome"
+   :site-url             "http://blogawesome.com/"
+   :post-root            "posts"
+   :page-root            "pages"
+   :post-root-uri        "posts-output"
+   :page-root-uri        "pages-output"
+   :tag-root-uri         "tags-output"
+   :author-root-uri      "authors-output"
+   :blog-prefix          "/blog"
+   :rss-name             "feed.xml"
+   :rss-filters          ["cryogen"]
+   :recent-posts         3
+   :post-date-format     "yyyy-MM-dd"
+   :archive-group-format "yyyy MMMM"
+   :sass-src             ""
+   :sass-dest            nil
+   :sass-path            "sass"
+   :compass-path         "compass"
+   :theme                "blue"
+   :resources            ["img"]
+   :keep-files           [".git"]
+   :disqus?              false
+   :disqus-shortname     ""
+   :ignored-files        [#"\.#.*" #".*\.swp$"]
+   :posts-per-page       5
+   :blocks-per-preview   2
+   :previews?            false
+   :clean-urls?          true
+   :hide-future-posts?   true
+   :klipse               {}
+   :debug?               false})
+
+(deftest test-config-parsing
+  (testing "Parsing configuration file"
+    (is (process-config default-config))))
+

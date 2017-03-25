@@ -1,9 +1,10 @@
 (ns cryogen-core.compiler
   (:require [clojure.java.io :as io]
             [clojure.pprint :refer [pprint]]
-            [clojure.string :as s]
+            [clojure.string :as string]
             [io.aviso.exception :refer [write-exception]]
             [net.cgrand.enlive-html :as enlive]
+            [schema.core :as s]
             [selmer.parser :refer [cache-off! render-file]]
             [selmer.util :refer [set-custom-resource-path!]]
             [text-decoration.core :refer :all]
@@ -12,6 +13,7 @@
             [cryogen-core.markup :as m]
             [cryogen-core.rss :as rss]
             [cryogen-core.sass :as sass]
+            [cryogen-core.schemas :as schemas]
             [cryogen-core.sitemap :as sitemap]
             [cryogen-core.toc :as toc])
   (:import java.util.Locale))
@@ -23,12 +25,12 @@
   [k config]
   (if-let [uri (k config)]
     uri
-    (config (-> k (name) (s/replace #"-uri$" "") (keyword)))))
+    (config (-> k (name) (string/replace #"-uri$" "") (keyword)))))
 
 (defn re-pattern-from-ext
   "Creates a properly quoted regex pattern for the given file extension"
   [ext]
-  (re-pattern (str (s/replace ext "." "\\.") "$")))
+  (re-pattern (str (string/replace ext "." "\\.") "$")))
 
 (defn find-entries
   "Returns a list of files under the templates directory according to the
@@ -69,16 +71,18 @@
    (page-uri file-name nil params))
   ([file-name uri-type {:keys [blog-prefix clean-urls?] :as params}]
    (let [page-uri (get params uri-type)
-         uri-end  (if clean-urls? (s/replace file-name #"(index)?\.html" "/") file-name)]
+         uri-end  (if clean-urls? (string/replace file-name #"(index)?\.html" "/") file-name)]
      (cryogen-io/path "/" blog-prefix page-uri uri-end))))
 
 (defn read-page-meta
   "Returns the clojure map from the top of a markdown page/post"
   [page rdr]
   (try
-    (read rdr)
-    (catch Exception _
-      (throw (IllegalArgumentException. (str "Malformed metadata on page: " page))))))
+    (let [metadata (read rdr)]
+      (s/validate schemas/MetaData metadata)
+      metadata)
+    (catch Exception e
+      (throw e))))
 
 (defn page-content
   "Returns a map with the given page's file-name, metadata and content parsed from
@@ -86,9 +90,9 @@
   [^java.io.File page config markup]
   (with-open [rdr (java.io.PushbackReader. (io/reader page))]
     (let [re-root   (re-pattern (str "^.*?(" (:page-root config) "|" (:post-root config) ")/"))
-          page-fwd  (s/replace (str page) "\\" "/")         ;; make it work on Windows
-          page-name (s/replace page-fwd re-root "")
-          file-name (s/replace page-name (re-pattern-from-ext (m/ext markup)) ".html")
+          page-fwd  (string/replace (str page) "\\" "/")    ;; make it work on Windows
+          page-name (string/replace page-fwd re-root "")
+          file-name (string/replace page-name (re-pattern-from-ext (m/ext markup)) ".html")
           page-meta (read-page-meta page-name rdr)
           content   ((m/render-fn markup) rdr config)]
       {:file-name file-name
@@ -306,7 +310,7 @@
   "Returns the content until the <!--more--> special comment,
   closing any unclosed tags. Returns nil if there's no such comment."
   [content]
-  (when-let [index (s/index-of content "<!--more-->")]
+  (when-let [index (string/index-of content "<!--more-->")]
     (->> (subs content 0 index)
          enlive/html-snippet
          enlive/emit*
@@ -443,32 +447,23 @@
              {:resources     folders
               :ignored-files (map #(re-pattern-from-ext (m/ext %)) (m/markups))}))))
 
-(defn read-config
+(defn process-config
   "Reads the config file"
-  []
+  [config]
   (try
-    (let [config (-> "templates/config.edn"
-                     cryogen-io/get-resource
-                     slurp
-                     read-string
-                     (update-in [:blog-prefix] (fnil str ""))
-                     (update-in [:page-root] (fnil str ""))
-                     (update-in [:post-root] (fnil str ""))
-                     (update-in [:tag-root-uri] (fnil str ""))
-                     (update-in [:rss-name] (fnil str "rss.xml"))
-                     (update-in [:rss-filters] (fnil seq []))
-                     (update-in [:sass-src] (fnil identity "css"))
-                     (update-in [:sass-path] (fnil str "sass"))
-                     (update-in [:compass-path] (fnil str "compass"))
-                     (update-in [:post-date-format] (fnil str "yyyy-MM-dd"))
-                     (update-in [:keep-files] (fnil seq []))
-                     (update-in [:ignored-files] (fnil seq [#"^\.#.*" #".*\.swp$"])))]
-      (merge
-        config
-        {:page-root-uri (root-uri :page-root-uri config)
-         :post-root-uri (root-uri :post-root-uri config)}))
-    (catch Exception _
-      (throw (IllegalArgumentException. "Failed to parse config.edn")))))
+    (s/validate schemas/Config config)
+    (-> config
+        (update-in [:tag-root-uri] (fnil identity ""))
+        (update-in [:sass-src] (fnil identity "css"))
+        (update-in [:sass-path] (fnil identity "sass"))
+        (update-in [:compass-path] (fnil identity "compass"))
+        (assoc :page-root-uri (root-uri :page-root-uri config)
+               :post-root-uri (root-uri :post-root-uri config)))
+    (catch Exception e (throw e))))
+
+(defn read-config []
+  (-> "templates/config.edn"
+      cryogen-io/get-resource slurp read-string process-config))
 
 (defn klipsify
   "Add the klipse html under the :klipse key and adds nohighlight
