@@ -23,8 +23,8 @@
       false)))
 
 (defn find-sass-files
-  "Given a Diretory, gets files, Filtered to those having scss or sass
-   extention. Ignores files matching any ignored regexps."
+  "Given a directory, gets files, filtered to those having scss or sass
+   extension. Ignores files matching any ignored regexps."
   [base-dir dir ignored-files]
   (let [^java.io.FilenameFilter filename-filter (cryogen-io/match-re-filter #"(?i:s[ca]ss$)")]
     (->> (.listFiles (io/file base-dir dir) filename-filter)
@@ -32,30 +32,34 @@
          (filter (cryogen-io/ignore ignored-files))
          (map #(.getName ^java.io.File %)))))
 
-(defn compile-sass-file!
-  "Given a sass file which might be in sass-src directory,
-   output the resulting css in sass-dest. All error handling is
-   done by sh / launching the sass command."
-  [{:keys [sass-src sass-dest sass-path compass-path base-dir]}]
+(defn compile-sass-dir!
+  "Given a sass directory (or file), output the resulting CSS in the
+   same dir. All error handling is done by sh / launching the sass
+   command."
+  [{:keys [sass-dir sass-path compass-path base-dir]}]
   (shell/with-sh-dir base-dir
     (if (compass-installed? compass-path)
-      (sh sass-path "--compass" "--update" (str sass-src ":" sass-dest))
-      (sh sass-path "--update" (str sass-src ":" sass-dest)))))
+      (sh sass-path "--compass" "--update" sass-dir)
+      (sh sass-path "--update" sass-dir))))
 
 (defn compile-sass->css!
-  "Given a directory sass-src, looks for all sass files and compiles them into
-   sass-dest. Prompts you to install sass if he finds sass files and can't find
-   the command. Shows you any problems it comes across when compiling. "
-  [{:keys [sass-src sass-dest sass-path ignored-files base-dir] :as opts}]
-  (when (seq (find-sass-files base-dir sass-src ignored-files))
-    (if (sass-installed? sass-path)
-      (do
-        (println "\t" (cyan sass-src) "-->" (cyan sass-dest))
-        (let [result (compile-sass-file! opts)]
-          (if (zero? (:exit result))
-            (println "Successfully compiled sass files")
-            (println (red (:err result))
-                     (red (:out result))))))
-      (println "Sass seems not to be installed, but you have scss / sass files in "
-               sass-src
-               " - You might want to install it here: sass-lang.com"))))
+  "Given a directory or directories in sass-src, looks for all Sass
+   files and compiles them. Prompts you to install sass if it finds
+   Sass files but can't find the command. Shows you any problems it
+   comes across when compiling. "
+  [{:keys [sass-src sass-path ignored-files base-dir] :as opts}]
+  (let [sass-src (if (coll? sass-src) sass-src [sass-src])]
+    (if (and (not (empty? sass-src))
+             (not (sass-installed? sass-path)))
+      (println (red (str "Sass seems not to be installed, but you have scss / sass files in "
+                         sass-src
+                         " - You might want to install it here: sass-lang.com")))
+      (doseq [sass-dir sass-src]
+        (when (seq (find-sass-files base-dir sass-dir ignored-files))
+          (do
+            (println "\t" (cyan sass-dir) "-->" (cyan sass-dir))
+            (let [result (compile-sass-dir! (assoc opts :sass-dir sass-dir))]
+              (if (zero? (:exit result))
+                (println "Successfully compiled sass files")
+                (println (red (:err result))
+                         (red (:out result)))))))))))

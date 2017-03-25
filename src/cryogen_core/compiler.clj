@@ -455,7 +455,6 @@
     (-> config
         (update-in [:tag-root-uri] (fnil identity ""))
         (update-in [:sass-src] (fnil identity "css"))
-        (update-in [:sass-dest] (fnil identity "css"))
         (update-in [:sass-path] (fnil identity "sass"))
         (update-in [:compass-path] (fnil identity "compass"))
         (assoc :page-root-uri (root-uri :page-root-uri config)
@@ -479,7 +478,7 @@
   "Generates all the html and copies over resources specified in the config"
   []
   (println (green "compiling assets..."))
-  (let [{:keys [^String site-url blog-prefix rss-name recent-posts sass-dest keep-files ignored-files previews? author-root-uri theme]
+  (let [{:keys [^String site-url blog-prefix rss-name recent-posts keep-files ignored-files previews? author-root-uri theme]
          :as   config} (read-config)
         posts        (map klipsify (add-prev-next (read-posts config)))
         posts-by-tag (group-by-tags posts)
@@ -514,6 +513,10 @@
 
     (set-custom-resource-path! (str "file:resources/templates/themes/" theme))
     (cryogen-io/wipe-public-folder keep-files)
+    (println (blue "compiling sass"))
+    (sass/compile-sass->css!
+     (merge (select-keys config [:sass-path :compass-path :sass-src :ignored-files])
+            {:base-dir  "resources/templates/"}))
     (println (blue "copying theme resources"))
     (cryogen-io/copy-resources-from-theme config)
     (println (blue "copying resources"))
@@ -537,12 +540,7 @@
     (->> (rss/make-channel config posts)
          (cryogen-io/create-file (cryogen-io/path "/" blog-prefix rss-name)))
     (println (blue "generating filtered rss"))
-    (rss/make-filtered-channels config posts-by-tag)
-    (println (blue "compiling sass"))
-    (sass/compile-sass->css!
-      (merge (select-keys config [:sass-path :compass-path :sass-src :ignored-files])
-             {:sass-dest (cryogen-io/path ".." "public" blog-prefix sass-dest)
-              :base-dir  "resources/templates/"}))))
+    (rss/make-filtered-channels config posts-by-tag)))
 
 (defn compile-assets-timed []
   (time
