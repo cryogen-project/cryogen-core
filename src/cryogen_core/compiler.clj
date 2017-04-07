@@ -463,7 +463,7 @@
 
 (defn read-config []
   (-> "templates/config.edn"
-      cryogen-io/get-resource slurp read-string process-config))
+      cryogen-io/get-resource slurp read-string))
 
 (defn klipsify
   "Add the klipse html under the :klipse key and adds nohighlight
@@ -491,7 +491,7 @@
      (println (yellow "overriding config.edn with:"))
      (pprint overrides))
    (let [{:keys [^String site-url blog-prefix rss-name recent-posts keep-files ignored-files previews? author-root-uri theme]
-          :as   config} (deep-merge (read-config) overrides)
+          :as   config} (process-config (deep-merge (read-config) overrides))
          posts        (map klipsify (add-prev-next (read-posts config)))
          posts-by-tag (group-by-tags posts)
          posts        (tag-posts posts config)
