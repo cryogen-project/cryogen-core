@@ -463,7 +463,7 @@
 
 (defn read-config []
   (-> "templates/config.edn"
-      cryogen-io/get-resource slurp read-string process-config))
+      cryogen-io/get-resource slurp read-string))
 
 (defn klipsify
   "Add the klipse html under the :klipse key and adds nohighlight
@@ -474,26 +474,38 @@
       (update :klipse klipse/emit content)
       (update :content klipse/tag-nohighlight (:settings klipse))))
 
+(defn deep-merge
+  "Recursively merges maps. If vals are not maps, the last value wins."
+  [& vals]
+  (if (and (every? map? vals) (< 1 (count vals)))
+    (apply merge-with deep-merge vals)
+    (last vals)))
+
 (defn compile-assets
   "Generates all the html and copies over resources specified in the config"
-  []
-  (println (green "compiling assets..."))
-  (let [{:keys [^String site-url blog-prefix rss-name recent-posts keep-files ignored-files previews? author-root-uri theme]
-         :as   config} (read-config)
-        posts        (map klipsify (add-prev-next (read-posts config)))
-        posts-by-tag (group-by-tags posts)
-        posts        (tag-posts posts config)
-        latest-posts (->> posts (take recent-posts) vec)
-        pages        (map klipsify (read-pages config))
-        home-page    (->> pages
-                          (filter #(boolean (:home? %)))
-                          (first))
-        other-pages  (->> pages
-                          (remove #{home-page})
-                          (add-prev-next))
-        [navbar-pages
-         sidebar-pages] (group-pages other-pages)
-        params       (merge
+  ([]
+   (compile-assets {}))
+  ([overrides]
+   (println (green "compiling assets..."))
+   (when-not (empty? overrides)
+     (println (yellow "overriding config.edn with:"))
+     (pprint overrides))
+   (let [{:keys [^String site-url blog-prefix rss-name recent-posts keep-files ignored-files previews? author-root-uri theme]
+          :as   config} (process-config (deep-merge (read-config) overrides))
+         posts        (map klipsify (add-prev-next (read-posts config)))
+         posts-by-tag (group-by-tags posts)
+         posts        (tag-posts posts config)
+         latest-posts (->> posts (take recent-posts) vec)
+         pages        (map klipsify (read-pages config))
+         home-page    (->> pages
+                           (filter #(boolean (:home? %)))
+                           (first))
+         other-pages  (->> pages
+                           (remove #{home-page})
+                           (add-prev-next))
+         [navbar-pages
+          sidebar-pages] (group-pages other-pages)
+         params       (merge
                        config
                        {:today         (java.util.Date.)
                         :title         (:site-title config)
@@ -511,43 +523,47 @@
                         :rss-uri       (cryogen-io/path "/" blog-prefix rss-name)
                         :site-url      (if (.endsWith site-url "/") (.substring site-url 0 (dec (count site-url))) site-url)})]
 
-    (set-custom-resource-path! (str "file:resources/templates/themes/" theme))
-    (cryogen-io/wipe-public-folder keep-files)
-    (println (blue "compiling sass"))
-    (sass/compile-sass->css!
-     (merge (select-keys config [:sass-path :compass-path :sass-src :ignored-files])
-            {:base-dir  "resources/templates/"}))
-    (println (blue "copying theme resources"))
-    (cryogen-io/copy-resources-from-theme config)
-    (println (blue "copying resources"))
-    (cryogen-io/copy-resources config)
-    (copy-resources-from-markup-folders config)
-    (compile-pages params other-pages)
-    (compile-posts params posts)
-    (compile-tags params posts-by-tag)
-    (compile-tags-page params)
-    (if previews?
-      (compile-preview-pages params posts)
-      (compile-index params))
-    (compile-archives params posts)
-    (when author-root-uri
-      (println (blue "generating authors views"))
-      (compile-authors params posts))
-    (println (blue "generating site map"))
-    (->> (sitemap/generate site-url ignored-files)
-         (cryogen-io/create-file (cryogen-io/path "/" blog-prefix "sitemap.xml")))
-    (println (blue "generating main rss"))
-    (->> (rss/make-channel config posts)
-         (cryogen-io/create-file (cryogen-io/path "/" blog-prefix rss-name)))
-    (println (blue "generating filtered rss"))
-    (rss/make-filtered-channels config posts-by-tag)))
+     (set-custom-resource-path! (str "file:resources/templates/themes/" theme))
+     (cryogen-io/wipe-public-folder keep-files)
+     (println (blue "compiling sass"))
+     (sass/compile-sass->css!
+      (merge (select-keys config [:sass-path :compass-path :sass-src :ignored-files])
+             {:base-dir  "resources/templates/"}))
+     (println (blue "copying theme resources"))
+     (cryogen-io/copy-resources-from-theme config)
+     (println (blue "copying resources"))
+     (cryogen-io/copy-resources config)
+     (copy-resources-from-markup-folders config)
+     (compile-pages params other-pages)
+     (compile-posts params posts)
+     (compile-tags params posts-by-tag)
+     (compile-tags-page params)
+     (if previews?
+       (compile-preview-pages params posts)
+       (compile-index params))
+     (compile-archives params posts)
+     (when author-root-uri
+       (println (blue "generating authors views"))
+       (compile-authors params posts))
+     (println (blue "generating site map"))
+     (->> (sitemap/generate site-url ignored-files)
+          (cryogen-io/create-file (cryogen-io/path "/" blog-prefix "sitemap.xml")))
+     (println (blue "generating main rss"))
+     (->> (rss/make-channel config posts)
+          (cryogen-io/create-file (cryogen-io/path "/" blog-prefix rss-name)))
+     (println (blue "generating filtered rss"))
+     (rss/make-filtered-channels config posts-by-tag))))
 
-(defn compile-assets-timed []
-  (time
+(defn compile-assets-timed
+  ([] (compile-assets-timed nil))
+  ([config]
+   (time
     (try
-      (compile-assets)
+      (if config
+        (compile-assets config)
+        (compile-assets))
       (catch Exception e
         (if (or (instance? IllegalArgumentException e)
                 (instance? clojure.lang.ExceptionInfo e))
           (println (red "Error:") (yellow (.getMessage e)))
-          (write-exception e))))))
+          (write-exception e)))))))
