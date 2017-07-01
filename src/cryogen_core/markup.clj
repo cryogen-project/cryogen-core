@@ -17,7 +17,9 @@
   [blog-prefix text]
   (if (string/blank? blog-prefix)
     text
-    (string/replace text #"href=.?/|src=.?/" #(str (subs % 0 (dec (count %))) blog-prefix "/"))))
+    (string/replace text
+                    #"(?!href=.?//)href=.?/|(?!src=.?//)src=.?/"
+                    #(str (subs % 0 (dec (count %))) blog-prefix "/"))))
 
 (defn markups
   "Return a vector of Markup implementations. This is the primary entry point
