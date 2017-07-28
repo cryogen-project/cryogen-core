@@ -23,8 +23,11 @@
 (def match-re-filter (partial re-filter some?))
 (def reject-re-filter (partial re-filter nil?))
 
-(defn get-resource [resource]
-  (-> resource io/resource io/file))
+(defn get-resource [resource-name]
+  (-> resource-name io/resource io/file))
+
+(defn read-edn-resource [resource]
+  (-> resource slurp read-string))
 
 (defn ignore [ignored-files]
   (fn [^java.io.File file]

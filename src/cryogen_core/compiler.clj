@@ -462,8 +462,16 @@
     (catch Exception e (throw e))))
 
 (defn read-config []
-  (-> "templates/config.edn"
-      cryogen-io/get-resource slurp read-string))
+  (let [config (-> "templates/config.edn"
+                   cryogen-io/get-resource
+                   cryogen-io/read-edn-resource)
+        theme-config-resource (-> config
+                                  :theme
+                                  (#(str "templates/themes/" % "/config.edn"))
+                                  cryogen-io/get-resource)]
+    (if (and (:theme config) theme-config-resource)
+      (merge-with into (cryogen-io/read-edn-resource theme-config-resource) config)
+      config)))
 
 (defn klipsify
   "Add the klipse html under the :klipse key and adds nohighlight
