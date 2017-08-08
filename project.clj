@@ -1,4 +1,4 @@
-(defproject cryogen-core "0.1.56"
+(defproject cryogen-core "0.1.57"
             :description "Cryogen's compiler"
             :url "https://github.com/cryogen-project/cryogen-core"
             :license {:name "Eclipse Public License"
@@ -11,10 +11,10 @@
                            [enlive "1.1.6"]
                            [hawk "0.2.11"]
                            [hiccup "1.0.5"]
-                           [io.aviso/pretty "0.1.33"]
+                           [io.aviso/pretty "0.1.34"]
                            [me.raynes/fs "1.4.6"]
                            [pandect "0.6.1"]
                            [prismatic/schema "1.1.6"]
-                           [selmer "1.10.7"]]
+                           [selmer "1.11.0"]]
             :deploy-repositories [["snapshots" :clojars]
                                   ["releases" :clojars]])
