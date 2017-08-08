@@ -169,3 +169,27 @@ and more content.
   (testing "Parsing configuration file"
     (is (process-config default-config))))
 
+(deftest test-config-merging
+  (let [config {:scalar "orig" :map {:k "orig" :submap {:k "suborig"}} :vec [:orig1 :orig2]}]
+    (testing "Merging with overrides"
+      (let [override-config (deep-merge true
+                                        config
+                                        {:scalar "override"
+                                         :map {:k "override" :submap {:k "override"}}
+                                         :vec ["override"]})]
+        (is (= "override" (:scalar override-config)))
+        (is (= "override" (get-in override-config [:map :k])))
+        (is (= "override" (get-in override-config [:map :submap :k])))
+        (is (and (some #{"override"} (:vec override-config))
+                 (not-any? #{:orig1} (:vec override-config))))))
+
+    (testing "Merging without overrides"
+      (let [override-config (deep-merge false
+                                        config
+                                        {:scalar "override"
+                                         :map {:k "override" :submap {:k "override"}}
+                                         :vec ["added"]})]
+        (is (= "override" (:scalar override-config)))
+        (is (= "override" (get-in override-config [:map :k])))
+        (is (= "override" (get-in override-config [:map :submap :k])))
+        (is (every? #{"added" :orig1 :orig2} (:vec override-config)))))))
