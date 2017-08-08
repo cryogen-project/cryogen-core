@@ -461,6 +461,17 @@
                :post-root-uri (root-uri :post-root-uri config)))
     (catch Exception e (throw e))))
 
+(defn deep-merge
+  "Recursively merges maps. When override is true, for scalars and vectors,
+  the last value wins. When override is false, vectors are merged, but for
+  scalars, the last value still wins."
+  [override & vs]
+  (cond
+    (= (count vs) 1) vs
+    (every? map? vs) (apply merge-with (partial deep-merge override) vs)
+    (and (not override) (every? sequential? vs)) (apply into vs)
+    :else (last vs)))
+
 (defn read-config []
   (let [config (-> "templates/config.edn"
                    cryogen-io/get-resource
@@ -470,7 +481,7 @@
                                   (#(str "templates/themes/" % "/config.edn"))
                                   cryogen-io/get-resource)]
     (if (and (:theme config) theme-config-resource)
-      (merge-with into (cryogen-io/read-edn-resource theme-config-resource) config)
+      (deep-merge false (cryogen-io/read-edn-resource theme-config-resource) config)
       config)))
 
 (defn klipsify
@@ -482,13 +493,6 @@
       (update :klipse klipse/emit content)
       (update :content klipse/tag-nohighlight (:settings klipse))))
 
-(defn deep-merge
-  "Recursively merges maps. If vals are not maps, the last value wins."
-  [& vals]
-  (if (and (every? map? vals) (< 1 (count vals)))
-    (apply merge-with deep-merge vals)
-    (last vals)))
-
 (defn compile-assets
   "Generates all the html and copies over resources specified in the config"
   ([]
@@ -499,7 +503,7 @@
      (println (yellow "overriding config.edn with:"))
      (pprint overrides))
    (let [{:keys [^String site-url blog-prefix rss-name recent-posts keep-files ignored-files previews? author-root-uri theme]
-          :as   config} (process-config (deep-merge (read-config) overrides))
+          :as   config} (process-config (deep-merge true (read-config) overrides))
          posts        (map klipsify (add-prev-next (read-posts config)))
          posts-by-tag (group-by-tags posts)
          posts        (tag-posts posts config)
