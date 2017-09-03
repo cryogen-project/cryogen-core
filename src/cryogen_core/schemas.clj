@@ -15,7 +15,8 @@
    (s/optional-key :date)       s/Str
    (s/optional-key :author)     s/Str
    (s/optional-key :tags)       [s/Str]
-   (s/optional-key :toc)        s/Bool
+   (s/optional-key :toc)        (s/conditional keyword? (s/enum :ol :ul)
+                                               :else    s/Bool)
    (s/optional-key :draft?)     s/Bool
    (s/optional-key :klipse)     Klipse
    (s/optional-key :home?)      s/Bool
