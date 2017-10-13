@@ -104,17 +104,23 @@
       (update-existing "codemirror_options_in" (partial map-keys ->camelCaseString))
       (update-existing "codemirror_options_out" (partial map-keys ->camelCaseString))))
 
+(defn klipsify?
+  "Whether to klipsify a post based on the global and local configs."
+  [global local]
+  (boolean
+   (and local (or (seq global)
+                  (and (map? local) (seq local))))))
+
 (defn merge-configs
   "Merges the defaults, global config and post config,
   transforms lisp-case keywords into snake_case/camelCase strings
   Returns nil if there's no post-config.
   A post-config with the value true counts as an empty map."
-  [global-config post-config]
-  (when post-config
-    (let [post-config (if (true? post-config) {} post-config)]
-      (deep-merge defaults
-                  (update-existing global-config :settings normalize-settings)
-                  (update-existing post-config :settings normalize-settings)))))
+  [global local]
+  (let [local (if (true? local) {} local)]
+    (deep-merge defaults
+                (update-existing global :settings normalize-settings)
+                (update-existing local :settings normalize-settings))))
 
 (defn infer-clojure-eval
   "Infers whether there's clojure eval and returns the config with the
@@ -124,8 +130,8 @@
   (if (:js config)
     config
     (assoc config
-      :js
-      (if (clojure-eval? (:settings config) html) :non-min :min))))
+           :js
+           (if (clojure-eval? (:settings config) html) :non-min :min))))
 
 (defn include-css [href]
   (str "<link rel=\"stylesheet\" type=\"text/css\" href=" (pr-str href) ">"))
@@ -134,15 +140,21 @@
   (str "<script src=" (pr-str src) "></script>"))
 
 (defn emit
-  "Takes the :klipse config from config.edn and the :klipse config from the
-  current post, and returns the html to include on the bottom of the page."
-  [config html]
-  (when-let [{:keys [settings js-src js css-base css-theme]}
-             (infer-clojure-eval config html)]
+  "Takes the final klipse config and returns the html to include on the bottom of the page."
+  [{:keys [settings js-src js css-base css-theme]}]
+  (str (include-css css-base) "\n"
+       (when css-theme (str (include-css css-theme) "\n"))
+       "<script>\n"
+       "window.klipse_settings = " (json/generate-string settings {:pretty true}) ";\n"
+       "</script>\n"
+       (include-js (js js-src))))
 
-    (str (include-css css-base) "\n"
-         (when css-theme (str (include-css css-theme) "\n"))
-         "<script>\n"
-         "window.klipse_settings = " (json/generate-string settings {:pretty true}) ";\n"
-         "</script>\n"
-         (include-js (js js-src)))))
+(defn klipsify
+  "Klipsifies (or not) a post depending on the global and local klipse configs."
+  [{:keys [klipse/global klipse/local content] :as post}]
+  (if-not (klipsify? global local)
+    (dissoc post :klipse)
+    (let [cfg (-> (merge-configs global local) (infer-clojure-eval content))]
+      (-> post
+          (assoc :klipse (emit cfg))
+          (update :content tag-nohighlight (:settings cfg))))))

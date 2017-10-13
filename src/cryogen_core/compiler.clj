@@ -115,9 +115,10 @@
   (let [{:keys [file-name page-meta content]} (page-content page config markup)]
     (merge
       (merge-meta-and-content file-name page-meta content)
-      {:uri        (page-uri file-name :page-root-uri config)
-       :page-index (:page-index page-meta)
-       :klipse     (klipse/merge-configs (:klipse config) (:klipse page-meta))})))
+      {:uri           (page-uri file-name :page-root-uri config)
+       :page-index    (:page-index page-meta)
+       :klipse/global (:klipse config)
+       :klipse/local  (:klipse page-meta)})))
 
 (defn parse-post
   "Return a map with the given post's information."
@@ -135,7 +136,8 @@
          :parsed-archive-group    (.parse archive-fmt formatted-group)
          :uri                     (page-uri file-name :post-root-uri config)
          :tags                    (set (:tags page-meta))
-         :klipse                  (klipse/merge-configs (:klipse config) (:klipse page-meta))}))))
+         :klipse/global           (:klipse config)
+         :klipse/local            (:klipse page-meta)}))))
 
 (defn read-posts
   "Returns a sequence of maps representing the data from markdown files of posts.
@@ -484,15 +486,6 @@
       (deep-merge false (cryogen-io/read-edn-resource theme-config-resource) config)
       config)))
 
-(defn klipsify
-  "Add the klipse html under the :klipse key and adds nohighlight
-  classes to any code blocks that are to be klipsified. Expects
-  configuration to be under :klipse, if there's none it does nothing."
-  [{:keys [klipse content] :as post-or-page}]
-  (-> post-or-page
-      (update :klipse klipse/emit content)
-      (update :content klipse/tag-nohighlight (:settings klipse))))
-
 (defn compile-assets
   "Generates all the html and copies over resources specified in the config"
   ([]
@@ -504,11 +497,11 @@
      (pprint overrides))
    (let [{:keys [^String site-url blog-prefix rss-name recent-posts keep-files ignored-files previews? author-root-uri theme]
           :as   config} (process-config (deep-merge true (read-config) overrides))
-         posts        (map klipsify (add-prev-next (read-posts config)))
+         posts        (map klipse/klipsify (add-prev-next (read-posts config)))
          posts-by-tag (group-by-tags posts)
          posts        (tag-posts posts config)
          latest-posts (->> posts (take recent-posts) vec)
-         pages        (map klipsify (read-pages config))
+         pages        (map klipse/klipsify (read-pages config))
          home-page    (->> pages
                            (filter #(boolean (:home? %)))
                            (first))

@@ -69,7 +69,18 @@
 
   (testing "If it's all set up in config.edn, in the post it can be just :klipse true"
     (is (= (merge defaults {:settings {"selector_js" ".javascript"}})
-           (merge-configs {:settings {:selector-js ".javascript"}} true))))
+           (merge-configs {:settings {:selector-js ".javascript"}} true)))))
 
-  (testing "Returns nil if there's nothing in the blog post"
-    (is (nil? (merge-configs {:settings {:selector ".clojure-eval"}} nil)))))
+(def valid-cfg
+  "A minimal valid config."
+  {:settings {:selector ".cljs"}})
+
+(deftest klipsify?-test
+  (is (false? (klipsify? {} true)))
+  (is (false? (klipsify? {} {})))
+  (is (false? (klipsify? nil {})))
+  (is (false? (klipsify? valid-cfg nil)))
+  (is (true? (klipsify? valid-cfg {})))
+  (is (true? (klipsify? valid-cfg true)))
+  (is (true? (klipsify? {} valid-cfg)))
+  (is (true? (klipsify? nil valid-cfg))))
