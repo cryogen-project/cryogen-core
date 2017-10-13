@@ -140,9 +140,6 @@
   (when-let [{:keys [settings js-src js css-base css-theme]}
              (infer-clojure-eval config html)]
 
-    (assert (#{:min :non-min} js)
-            (str ":js needs to be one of :min or :non-min but was: " js))
-
     (str (include-css css-base) "\n"
          (when css-theme (str (include-css css-theme) "\n"))
          "<script>\n"
