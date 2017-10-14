@@ -51,19 +51,84 @@
               (fn [node children] (assoc node :children (apply vector children)))
               {:value :root :children []})
          items headings]
-    (if-let [{tag :tag {id :id} :attrs [{{name :name} :attrs} title :as htext] :content} (first items)]
-      (let [anchor (or id name)]
+    ;; I pulled the giant gnarly destructuring out into multiple ones
+    ;; so I could grok it better. It should be equivalent.
+    (if-let [item (first items)]
+      (let [{:keys [tag attrs content]} item
+            {:keys [id]} attrs
+            [{{:keys [name]} :attrs} title :as htext] content
+            anchor (or id name)]
         (if (nil? anchor)
           (recur zp (rest items))
-          (recur (insert-toc-tree-entry zp
-                   {:tag tag
-                    :anchor anchor
-                    :text (or
-                            (if (string? title) title (-> title :content first))
-                            (first htext))})
+          (recur (insert-toc-tree-entry
+                  zp
+                  {:tag tag
+                   :anchor anchor
+
+                   ;; This fixes the issue, but a bunch of tests fail.
+                   ;; Would be nice with some input about what's supposed to happen here.
+                   :text (apply str (enlive/emit* content))
+                   #_(or
+                      (if (string? title) title (-> title :content first))
+                      (first htext))})
                  (rest items))))
       (z/root zp))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; The test failures
+
+;; FAIL in (test-build-toc) (toc_test.clj:62)
+;; expected: (= [:ol.content (seq [[:li [:a {:href "#test"} "Test"]]])] (-> simplest-header (parse-to-headings) (build-toc-tree) (build-toc :ol)))
+;; actual: (not (= [:ol.content ([:li [:a {:href "#test"} "Test"]])] [:ol.content ([:li [:a {:href "#test"} "<a name=\"test\"></a>Test"]])]))
+
+;; lein test :only cryogen-core.toc-test/test-build-toc
+
+;; FAIL in (test-build-toc) (toc_test.clj:72)
+;; No outer header should be less indented than the first header tag.
+;; expected: (= [:ol.content (seq [[:li [:a {:href "#starting_low"} "Starting Low"]] [:li [:a {:href "#finishing_high"} "Finishing High"]]])] (-> closing-header-larger-than-opening-1 (parse-to-headings) (build-toc-tree) (build-toc :ol)))
+;; actual: (not (= [:ol.content ([:li [:a {:href "#starting_low"} "Starting Low"]] [:li [:a {:href "#finishing_high"} "Finishing High"]])] [:ol.content ([:li [:a {:href "#starting_low"} "<a name=\"starting_low\"></a>Starting Low"]] [:li [:a {:href "#finishing_high"} "<a name=\"finishing_high\"></a>Finishing High"]])]))
+
+;; lein test :only cryogen-core.toc-test/test-build-toc
+
+
+;; ;; htmlString "<div><h2><a name=\"test\"></a>Test</h2></div>"
+
+;; FAIL in (test-build-toc) (toc_test.clj:79)
+;; Inner headers can be more indented, but outer headers cannot be less indented than the original header.
+;; expected: (= [:ul.content (seq [(seq [[:li [:a {:href "#starting_low"} "Starting Low"]] [:ul (seq [[:li [:a {:href "#jumping_in"} "Jumping Right In"]] [:li [:a {:href "#pulling_back"} "But then pull back"]]])]]) [:li [:a {:href "#to_the_top"} "To the top"]]])] (-> closing-header-larger-than-opening-2 (parse-to-headings) (build-toc-tree) (build-toc :ul)))
+;; actual: (not (= [:ul.content (([:li [:a {:href "#starting_low"} "Starting Low"]] [:ul ([:li [:a {:href "#jumping_in"} "Jumping Right In"]] [:li [:a {:href "#pulling_back"} "But then pull back"]])]) [:li [:a {:href "#to_the_top"} "To the top"]])] [:ul.content (([:li [:a {:href "#starting_low"} "<a name=\"starting_low\"></a>Starting Low"]] [:ul ([:li [:a {:href "#jumping_in"} "<a name=\"jumping_in\"></a>Jumping Right In"]] [:li [:a {:href "#pulling_back"} "<a name=\"pulling_back\"></a>But then pull back"]])]) [:li [:a {:href "#to_the_top"} "<a name=\"to_the_top\"></a>To the top"]])]))
+
+;; lein test :only cryogen-core.toc-test/test-generate-toc
+
+;; FAIL in (test-generate-toc) (toc_test.clj:96)
+;; expected: (= "<ol class=\"content\"><li><a href=\"#test\">Test</a></li></ol>"
+;;              (generate-toc htmlString))
+;; actual: (not (= "<ol class=\"content\"><li><a href=\"#test\">Test</a></li></ol>"
+;;                 "<ol class=\"content\"><li><a href=\"#test\"><a name=\"test\"></a>Test</a></li></ol>"))
+
+;; lein test :only cryogen-core.toc-test/test-generate-toc
+
+;; FAIL in (test-generate-toc) (toc_test.clj:98)
+;; expected: (= "<ol class=\"content\"><li><a href=\"#test\">Test</a></li></ol>"
+;;              (generate-toc htmlString :list-type true))
+;; actual: (not (= "<ol class=\"content\"><li><a href=\"#test\">Test</a></li></ol>"
+;;                 "<ol class=\"content\"><li><a href=\"#test\"><a name=\"test\"></a>Test</a></li></ol>"))
+
+;; lein test :only cryogen-core.toc-test/test-generate-toc
+
+;; FAIL in (test-generate-toc) (toc_test.clj:100)
+;; expected: (= "<ol class=\"content\"><li><a href=\"#test\">Test</a></li></ol>"
+;;              (generate-toc htmlString :list-type :ol))
+;; actual: (not (= "<ol class=\"content\"><li><a href=\"#test\">Test</a></li></ol>"
+;;                 "<ol class=\"content\"><li><a href=\"#test\"><a name=\"test\"></a>Test</a></li></ol>"))
+
+;; lein test :only cryogen-core.toc-test/test-generate-toc
+
+;; FAIL in (test-generate-toc) (toc_test.clj:102)
+;; expected: (= "<ul class=\"content\"><li><a href=\"#test\">Test</a></li></ul>"
+;;              (generate-toc htmlString :list-type :ul))
+;; actual: (not (= "<ul class=\"content\"><li><a href=\"#test\">Test</a></li></ul>"
+;;                 "<ul class=\"content\"><li><a href=\"#test\"><a name=\"test\"></a>Test</a></li></ul>"))
 
 (defn- make-toc-entry
   "Given an anchor link and some text, construct a toc entry
@@ -90,6 +155,8 @@
                                        (repeat :outer-list?)
                                        (repeat false))]]
         (if-let [li li] ; The root element has nothing so ignore it
+          ;; FIXME: Not really related to anything, but seq does not
+          ;;        lazily concat things, what is intended here?
           (seq [li sublist]) ; Use seq to lazily concat the li with the sublists
           sublist))
       li))) ; Or just return the naked :li tag
