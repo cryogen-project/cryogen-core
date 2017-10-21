@@ -101,3 +101,21 @@
            (generate-toc htmlString :list-type :ol)))
     (is (= "<ul class=\"content\"><li><a href=\"#test\">Test</a></li></ul>"
            (generate-toc htmlString :list-type :ul)))))
+
+(deftest toc-includes-tags-in-titles
+  (testing "Regression test for https://github.com/cryogen-project/cryogen-core/issues/99"
+    (is (= (-> "<h2 id=\"a heading with some <code>code</code> included\">A heading with some <code>code</code> included</h2>"
+               (generate-toc)
+               (enlive/html-snippet))
+           '({:tag :ol,
+              :attrs {:class "content"},
+              :content
+              ({:tag :li,
+                :attrs nil,
+                :content
+                ({:tag :a,
+                  :attrs {:href "#a heading with some <code>code</code> included"},
+                  :content
+                  ("A heading with some "
+                   {:tag :code, :attrs nil, :content ("code")}
+                   " included")})})})))))
