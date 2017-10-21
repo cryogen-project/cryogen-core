@@ -18,7 +18,8 @@
    (s/optional-key :toc)        (s/conditional keyword? (s/enum :ol :ul)
                                                :else    s/Bool)
    (s/optional-key :draft?)     s/Bool
-   (s/optional-key :klipse)     Klipse
+   (s/optional-key :klipse)     (s/conditional map?  Klipse
+                                               :else (s/pred true?))
    (s/optional-key :home?)      s/Bool
    (s/optional-key :page-index) s/Int
    (s/optional-key :navbar?)    s/Bool
