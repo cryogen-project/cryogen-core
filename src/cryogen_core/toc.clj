@@ -17,6 +17,13 @@
 (defn compare-index [h1 h2]
   (- (heading-index h2) (heading-index h1)))
 
+(defn toc-entry
+  "Given an anchor link and some text, construct a toc entry
+  consisting of link to the anchor using the given text, wrapped
+  in an <li> tag."
+  [anchor text]
+  (when (and anchor text)
+    [:li [:a {:href (str "#" anchor)} text]]))
 (defn- zip-toc-tree-to-insertion-point
   "Given a toc-tree zipper and a header level, navigate
   the zipper to the appropriate parent of the level for that header
@@ -42,32 +49,25 @@
   "Given a sequence of header nodes, build a toc tree using zippers
   and return it."
   [headings]
-  (loop [zp (z/zipper
-              map?
-              :children
-              (fn [node children] (assoc node :children (apply vector children)))
-              {:value :root :children []})
-         items headings]
-    (if-let [{tag :tag {id :id} :attrs [{{name :name} :attrs} title :as htext] :content} (first items)]
-      (let [anchor (or id name)]
-        (if (nil? anchor)
-          (recur zp (rest items))
-          (recur (insert-toc-tree-entry zp
-                   {:tag tag
-                    :anchor anchor
-                    :text (or
-                            (if (string? title) title (-> title :content first))
-                            (first htext))})
-                 (rest items))))
-      (z/root zp))))
-
-(defn toc-entry
-  "Given an anchor link and some text, construct a toc entry
-  consisting of link to the anchor using the given text, wrapped
-  in an <li> tag."
-  [anchor text]
-  (when (and anchor text)
-    [:li [:a {:href (str "#" anchor)} text]]))
+  (z/root
+   (reduce (fn [zp {tag :tag {id :id} :attrs [{{name :name} :attrs} title :as htext] :content}]
+             (let [anchor (or id name)]
+               (if (nil? anchor)
+                 zp
+                 (insert-toc-tree-entry zp
+                                        {:tag tag
+                                         :anchor anchor
+                                         :text (or
+                                                (if (string? title)
+                                                  title
+                                                  (-> title :content first))
+                                                (first htext))}))))
+           (z/zipper
+            map?
+            :children
+            (fn [node children] (assoc node :children (apply vector children)))
+            {:value :root :children []})
+           headings)))
 
 (defn- build-toc
   "Given the root of a toc tree and either :ol or :ul,
