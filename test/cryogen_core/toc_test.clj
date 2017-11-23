@@ -50,7 +50,7 @@
 ; * h2
 ;   * h3
 ; * h1
-(deftest test-build-toc
+(deftest test-generate-toc*
   (is (hic= [:ol.content [:li [:a {:href "#test"} "Test"]]]
             (-> [:div [:h2 [:a {:name "test"}] "Test"]]
                 (enlive/html)

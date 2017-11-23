@@ -31,7 +31,7 @@
   [toctree h-tag]
   (if-let [current-tag (-> toctree first :value :tag)]
     (let [direction (compare-index h-tag current-tag)]
-      (cond (zero? direction) (z/up toctree)                  ; Tag belongs at current level
+      (cond (zero? direction) (z/up toctree)                 ; Tag belongs at current level
             (neg? direction) toctree                         ; Tag belongs below this level
             (pos? direction) (recur (z/up toctree) h-tag)))  ; Keep looking up
     ; This level is the root list, return it
@@ -78,20 +78,20 @@
         first-list-open (if outer-list?
                           (keyword (str (name list-open) ".content"))
                           list-open)]
-    ; Create hiccup sequence of :ol/:ul tag and sequence of :li tags
+
+    ;; Create hiccup sequence of :ol/:ul tag and sequence of :li tags
     (if (seq children)
-      (let [sublist [first-list-open (map build-toc children
-                                       (repeat list-open)
-                                       (repeat :outer-list?)
-                                       (repeat false))]]
-        (if-let [li li] ; The root element has nothing so ignore it
+      (let [sublist [first-list-open
+                     (map #(build-toc % list-open :outer-list? false) children)]]
+
+        (if li ; The root element has nothing so ignore it
           (list li sublist)
           sublist))
       li))) ; Or just return the naked :li tag
 
 (defn generate-toc*
-  "The inner part of generate-toc. Takes and returns html element maps
-  (like clojure-xml or enlive) instead of a html string."
+  "The inner part of generate-toc. Takes maps of enlive-style html elements
+  and returns hiccup."
   [elements list-type]
   (-> elements
       (get-headings)
