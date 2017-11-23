@@ -92,7 +92,23 @@
                 (generate-toc* :ul)))
       (str "Inner headers can be more indented, "
            "but outer headers cannot be less indented "
-           "than the original header.")))
+           "than the original header."))
+
+  (is (hic= [:ol.content
+             [:li [:a {:href "#foo_<code>bar</code>"} "foo " [:code "bar"]]]]
+            (-> [:div [:h2 {:id "foo_<code>bar</code>"} "foo " [:code "bar"]]]
+                (enlive/html)
+                (generate-toc* :ol)))
+      "Supports code tags in headings.")
+
+  (is (hic= [:ol.content
+             [:li [:a {:href "#foo_<strong>bar_<i>baz</i></strong>"}
+                   "foo " [:strong "bar " [:i "baz"]]]]]
+            (-> [:div [:h2 {:id "foo_<strong>bar_<i>baz</i></strong>"}
+                       "foo " [:strong "bar " [:i "baz"]]]]
+                (enlive/html)
+                (generate-toc* :ol)))
+      "Supports nested tags in headings."))
 
 (deftest test-generate-toc
   (let [htmlString "<div><h2><a name=\"test\"></a>Test</h2></div>"]
