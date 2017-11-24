@@ -78,12 +78,8 @@
 
     ;; Create hiccup sequence of :ol/:ul tag and sequence of :li tags
     (if (seq children)
-      (let [sublist [first-list-open
-                     (map #(build-toc % list-open :outer-list? false) children)]]
-
-        (if li ; The root element has nothing so ignore it
-          (list li sublist)
-          sublist))
+      (list li [first-list-open
+                (map #(build-toc % list-open :outer-list? false) children)])
       li))) ; Or just return the naked :li tag
 
 (defn generate-toc*
