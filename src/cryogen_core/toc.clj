@@ -71,14 +71,12 @@
   generate the table of contents and return it as a hiccup tree."
   [toc-tree list-open & {:keys [outer-list?] :or {outer-list? true}}]
   (let [{:keys [children], {:keys [anchor text]} :value} toc-tree
-        li (toc-entry anchor text)
-        first-list-open (if outer-list?
-                          (keyword (str (name list-open) ".content"))
-                          list-open)]
-
-    ;; Create hiccup sequence of :ol/:ul tag and sequence of :li tags
+        li (toc-entry anchor text)]
     (if (seq children)
-      (list li [first-list-open
+      ;; Create hiccup sequence of :ol/:ul tag and sequence of :li tags
+      (list li [list-open
+                (when outer-list?
+                  {:class "content"})
                 (map #(build-toc % list-open :outer-list? false) children)])
       li))) ; Or just return the naked :li tag
 
