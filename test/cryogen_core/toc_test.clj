@@ -2,27 +2,8 @@
   (:require [clojure.test :refer :all]
             [clojure.string :as string]
             [net.cgrand.enlive-html :as enlive]
+            [cryogen-core.util :as util]
             [cryogen-core.toc :refer :all]))
-
-(defn collapse-lists
-  "Given hiccup containing lists, will collapse the lists into
-  the surrounding elements (like hiccup does in the process of compiling html)"
-  [xs]
-  (when xs
-    (reduce (fn [acc x]
-              (cond (vector? x) (conj acc (collapse-lists x))
-                    (sequential? x) (into acc (collapse-lists x))
-                    :else (conj acc x)))
-            [], xs)))
-
-(deftest collapse-lists-test
-  (is (nil? (collapse-lists nil)))
-  (is (= [:foo :bar] (collapse-lists [:foo '(:bar)])))
-  (is (= [:foo [:bar] [:baz]] (collapse-lists [:foo '([:bar] [:baz])]))))
-
-(defn hic=
-  [x & xs]
-  (apply = (map collapse-lists (cons x xs))))
 
 ; Test that the get-headings function properly filters non-headers
 (deftest test-get-headings
@@ -51,67 +32,67 @@
 ;   * h3
 ; * h1
 (deftest test-generate-toc*
-  (is (hic= [:ol.content [:li [:a {:href "#test"} "Test"]]]
-            (-> [:div [:h2 [:a {:name "test"}] "Test"]]
-                (enlive/html)
-                (generate-toc* :ol))))
+  (is (util/hic= [:ol.content [:li [:a {:href "#test"} "Test"]]]
+                 (-> [:div [:h2 {:id "test"} "Test"]]
+                     (enlive/html)
+                     (generate-toc* :ol))))
 
   (is (-> [:div [:p "This is not a header"]]
           (enlive/html)
           (generate-toc* :ol)
           (nil?)))
 
-  (is (hic= [:ol.content
-             [:li [:a {:href "#starting_low"} "Starting Low"]]
-             [:li [:a {:href "#finishing_high"} "Finishing High"]]]
-            (-> [:div
-                 [:h2 [:a {:name "starting_low"}]
-                  "Starting Low"]
-                 [:h1 [:a {:name "finishing_high"}]
-                  "Finishing High"]]
-                (enlive/html)
-                (generate-toc* :ol)))
+  (is (util/hic= [:ol.content
+                  [:li [:a {:href "#starting_low"} "Starting Low"]]
+                  [:li [:a {:href "#finishing_high"} "Finishing High"]]]
+                 (-> [:div
+                      [:h2 {:id "starting_low"}
+                       "Starting Low"]
+                      [:h1 {:id "finishing_high"}
+                       "Finishing High"]]
+                     (enlive/html)
+                     (generate-toc* :ol)))
       "No outer header should be less indented than the first header tag.")
 
-  (is (hic= [:ul.content
-             [:li [:a {:href "#starting_low"} "Starting Low"]]
-             [:ul
-              [:li [:a {:href "#jumping_in"} "Jumping Right In"]]
-              [:li [:a {:href "#pulling_back"} "But then pull back"]]]
-             [:li [:a {:href "#to_the_top"} "To the top"]]]
-            (-> [:div
-                 [:h2 [:a {:name "starting_low"}]
-                  "Starting Low"]
-                 [:h4 [:a {:name "jumping_in"}]
-                  "Jumping Right In"]
-                 [:h3 [:a {:name "pulling_back"}]
-                  "But then pull back"]
-                 [:h2 [:a {:name "to_the_top"}]
-                  "To the top"]]
-                (enlive/html)
-                (generate-toc* :ul)))
+  (is (util/hic= [:ul.content
+                  [:li [:a {:href "#starting_low"} "Starting Low"]]
+                  [:ul
+                   [:li [:a {:href "#jumping_in"} "Jumping Right In"]]
+                   [:li [:a {:href "#pulling_back"} "But then pull back"]]]
+                  [:li [:a {:href "#to_the_top"} "To the top"]]]
+                 (-> [:div
+                      [:h2 {:id "starting_low"}
+                       "Starting Low"]
+                      [:h4 {:id "jumping_in"}
+                       "Jumping Right In"]
+                      [:h3 {:id "pulling_back"}
+                       "But then pull back"]
+                      [:h2 {:id "to_the_top"}
+                       "To the top"]]
+                     (enlive/html)
+                     (generate-toc* :ul)))
       (str "Inner headers can be more indented, "
            "but outer headers cannot be less indented "
            "than the original header."))
 
-  (is (hic= [:ol.content
-             [:li [:a {:href "#foo_<code>bar</code>"} "foo " [:code "bar"]]]]
-            (-> [:div [:h2 {:id "foo_<code>bar</code>"} "foo " [:code "bar"]]]
-                (enlive/html)
-                (generate-toc* :ol)))
+  (is (util/hic= [:ol.content
+                  [:li [:a {:href "#foo_<code>bar</code>"} "foo " [:code "bar"]]]]
+                 (-> [:div [:h2 {:id "foo_<code>bar</code>"} "foo " [:code "bar"]]]
+                     (enlive/html)
+                     (generate-toc* :ol)))
       "Supports code tags in headings.")
 
-  (is (hic= [:ol.content
-             [:li [:a {:href "#foo_<strong>bar_<i>baz</i></strong>"}
-                   "foo " [:strong "bar " [:i "baz"]]]]]
-            (-> [:div [:h2 {:id "foo_<strong>bar_<i>baz</i></strong>"}
-                       "foo " [:strong "bar " [:i "baz"]]]]
-                (enlive/html)
-                (generate-toc* :ol)))
+  (is (util/hic= [:ol.content
+                  [:li [:a {:href "#foo_<strong>bar_<i>baz</i></strong>"}
+                        "foo " [:strong "bar " [:i "baz"]]]]]
+                 (-> [:div [:h2 {:id "foo_<strong>bar_<i>baz</i></strong>"}
+                            "foo " [:strong "bar " [:i "baz"]]]]
+                     (enlive/html)
+                     (generate-toc* :ol)))
       "Supports nested tags in headings."))
 
 (deftest test-generate-toc
-  (let [htmlString "<div><h2><a name=\"test\"></a>Test</h2></div>"]
+  (let [htmlString "<div><h2 id=\"test\">Test</h2></div>"]
     (is (= "<ol class=\"content\"><li><a href=\"#test\">Test</a></li></ol>"
            (generate-toc htmlString)))
     (is (= "<ol class=\"content\"><li><a href=\"#test\">Test</a></li></ol>"

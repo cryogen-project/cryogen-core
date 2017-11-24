@@ -24,6 +24,7 @@
   [anchor text]
   (when (and anchor text)
     [:li [:a {:href (str "#" anchor)} text]]))
+
 (defn- zip-toc-tree-to-insertion-point
   "Given a toc-tree zipper and a header level, navigate
   the zipper to the appropriate parent of the level for that header
@@ -49,25 +50,21 @@
   "Given a sequence of header nodes, build a toc tree using zippers
   and return it."
   [headings]
-  (z/root
-   (reduce (fn [zp {tag :tag {id :id} :attrs [{{name :name} :attrs} title :as htext] :content}]
-             (let [anchor (or id name)]
-               (if (nil? anchor)
-                 zp
-                 (insert-toc-tree-entry zp
-                                        {:tag tag
-                                         :anchor anchor
-                                         :text (or
-                                                (if (string? title)
-                                                  title
-                                                  (-> title :content first))
-                                                (first htext))}))))
-           (z/zipper
-            map?
-            :children
-            (fn [node children] (assoc node :children (apply vector children)))
-            {:value :root :children []})
-           headings)))
+  (transduce
+   (filter (comp :id :attrs))           ; Only include headers that have an id
+   (fn
+     ([zp] (z/root zp))                 ; Return the root
+     ([zp {:keys [tag attrs content]}]
+      (insert-toc-tree-entry zp
+                             {:tag tag
+                              :anchor (:id attrs)
+                              :text (util/enlive->hiccup content)})))
+   (z/zipper
+    map?
+    :children
+    (fn [node children] (assoc node :children (apply vector children)))
+    {:value :root :children []})
+   headings))
 
 (defn- build-toc
   "Given the root of a toc tree and either :ol or :ul,
