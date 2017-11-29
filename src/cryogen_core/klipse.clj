@@ -3,6 +3,7 @@
     [camel-snake-kebab.core :refer [->snake_case_string ->camelCaseString]]
     [cheshire.core :as json]
     [clojure.string :as string]
+    [cryogen-core.util :as util]
     [net.cgrand.enlive-html :as enlive]))
 
 ;;;;;;;;;;;
@@ -32,22 +33,13 @@
              v2))
          ms))
 
-(defn filter-html-elems
-  "Recursively walks a sequence of enlive-style html elements depth first
-  and returns a flat sequence of the elements where (pred elem)"
-  [pred html-elems]
-  (reduce (fn [acc {:keys [content] :as elem}]
-            (into (if (pred elem) (conj acc elem) acc)
-                  (filter-html-elems pred content)))
-          [] html-elems))
-
 (defn code-block-classes
   "Takes a string of html and returns a sequence of
   all the classes on all code blocks."
   [html]
   (->> html
        enlive/html-snippet
-       (filter-html-elems (comp #{:code} :tag))
+       (util/filter-html-elems (comp #{:code} :tag))
        (keep (comp :class :attrs))
        (mapcat #(string/split % #" "))))
 
