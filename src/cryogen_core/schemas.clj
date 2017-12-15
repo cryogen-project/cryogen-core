@@ -55,6 +55,7 @@
    (s/optional-key :posts-per-page)       s/Int
    (s/optional-key :blocks-per-preview)   s/Int
    :clean-urls?                           s/Bool
+   :subdirs?                              s/Bool
    :hide-future-posts?                    s/Bool
    (s/optional-key :klipse)               Klipse
    :debug?                                s/Bool
