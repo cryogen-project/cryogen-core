@@ -161,7 +161,7 @@ and more content.
    :blocks-per-preview   2
    :previews?            false
    :clean-urls?          true
-   :collapse-subdirs?    true
+   :collapse-subdirs?    false
    :hide-future-posts?   true
    :klipse               {}
    :debug?               false})
