@@ -91,7 +91,7 @@
   (with-open [rdr (java.io.PushbackReader. (io/reader page))]
     (let [re-root   (re-pattern (str "^.*?(" (:page-root config) "|" (:post-root config) ")/"))
           page-fwd  (string/replace (str page) "\\" "/")    ;; make it work on Windows
-          page-name (string/replace page-fwd re-root "")
+          page-name (if (:collapse-subdirs? config) (.getName page) (string/replace page-fwd re-root ""))
           file-name (string/replace page-name (re-pattern-from-ext (m/ext markup)) ".html")
           page-meta (read-page-meta page-name rdr)
           content   ((m/render-fn markup) rdr config)]
