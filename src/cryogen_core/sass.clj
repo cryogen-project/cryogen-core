@@ -39,9 +39,10 @@
   [{:keys [sass-dir sass-path compass-path base-dir]}]
   (shell/with-sh-dir
     base-dir
-    (if (compass-installed? compass-path)
-      (sh sass-path "--compass" "--update" sass-dir)
-      (sh sass-path "--update" sass-dir))))
+    (let [sass-argument (str sass-dir ":" sass-dir)]
+      (if (compass-installed? compass-path)
+        (sh sass-path "--compass" "--update" sass-argument)
+        (sh sass-path "--update" sass-argument)))))
 
 (defn compile-sass->css!
   "Given a directory or directories in sass-src, looks for all Sass files and compiles them.
