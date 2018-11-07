@@ -253,7 +253,7 @@
                                (merge params
                                       {:active-page     "pages"
                                        :home            false
-                                       :servlet-context (cryogen-io/path "/" blog-prefix "/")
+                                       :selmer/context  (cryogen-io/path "/" blog-prefix "/")
                                        :page            page
                                        :uri             uri}))))))
 
@@ -272,7 +272,7 @@
                   (render-file (str "/html/" (:layout post))
                                (merge params
                                       {:active-page      "posts"
-                                       :servlet-context  (cryogen-io/path "/" blog-prefix "/")
+                                       :selmer/context   (cryogen-io/path "/" blog-prefix "/")
                                        :post             post
                                        :disqus-shortname disqus-shortname
                                        :uri              uri}))))))
@@ -291,7 +291,7 @@
                     (render-file "/html/tag.html"
                                  (merge params
                                         {:active-page     "tags"
-                                         :servlet-context (cryogen-io/path "/" blog-prefix "/")
+                                         :selmer/context  (cryogen-io/path "/" blog-prefix "/")
                                          :name            name
                                          :posts           posts
                                          :uri             uri})))))))
@@ -305,7 +305,7 @@
                 (render-file "/html/tags.html"
                              (merge params
                                     {:active-page     "tags"
-                                     :servlet-context (cryogen-io/path "/" blog-prefix "/")
+                                     :selmer/context  (cryogen-io/path "/" blog-prefix "/")
                                      :uri             uri})))))
 
 (defn content-until-more-marker
@@ -367,14 +367,14 @@
                        (merge params
                               {:active-page     "preview"
                                :home            (when index-page? true)
-                               :servlet-context (cryogen-io/path "/" blog-prefix "/")
+                               :selmer/context  (cryogen-io/path "/" blog-prefix "/")
                                :posts           posts
                                :prev-uri        prev
                                :next-uri        next})))))))
 
 (defn compile-index
   "Compiles the index page into html and spits it out into the public folder"
-  [{:keys [disqus? debug? home-page] :as params}]
+  [{:keys [blog-prefix disqus? debug? home-page] :as params}]
   (println (blue "compiling index"))
   (let [uri (page-uri "index.html" params)]
     (when debug?
@@ -383,12 +383,13 @@
                 params
                 (render-file (str "/html/" (:layout home-page))
                              (merge params
-                                    {:active-page "home"
-                                     :home        true
-                                     :disqus?     disqus?
-                                     :uri         uri
-                                     :post        home-page
-                                     :page        home-page})))))
+                                    {:active-page    "home"
+                                     :home           true
+                                     :disqus?        disqus?
+                                     :selmer/context (cryogen-io/path "/" blog-prefix "/")
+                                     :uri            uri
+                                     :post           home-page
+                                     :page           home-page})))))
 
 (defn compile-archives
   "Compiles the archives page into html and spits it out into the public folder"
@@ -402,7 +403,7 @@
                                     {:active-page     "archives"
                                      :archives        true
                                      :groups          (group-for-archive posts)
-                                     :servlet-context (cryogen-io/path "/" blog-prefix "/")
+                                     :selmer/context  (cryogen-io/path "/" blog-prefix "/")
                                      :uri             uri})))))
 
 (defn compile-authors
@@ -420,7 +421,7 @@
                                (merge params
                                       {:author          author
                                        :groups          (group-for-archive posts)
-                                       :servlet-context (cryogen-io/path "/" blog-prefix "/")
+                                       :selmer/context  (cryogen-io/path "/" blog-prefix "/")
                                        :uri             uri}))))))
 
 (defn tag-posts
