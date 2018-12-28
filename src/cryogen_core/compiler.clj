@@ -65,13 +65,14 @@
   (let [fmt (java.text.SimpleDateFormat. date-fmt)]
     (.parse fmt (.substring file-name 0 10))))
 
+
 (defn page-uri
   "Creates a URI from file name. `uri-type` is any of the uri types specified in config, e.g., `:post-root-uri`."
   ([file-name params]
    (page-uri file-name nil params))
   ([file-name uri-type {:keys [blog-prefix clean-urls?] :as params}]
    (let [page-uri (get params uri-type)
-         uri-end  (if clean-urls? (string/replace file-name #"(index)?\.html" "/") file-name)]
+         uri-end  (if clean-urls? (string/replace file-name #"(index)?\.html" "") file-name)]
      (cryogen-io/path "/" blog-prefix page-uri uri-end))))
 
 (defn read-page-meta
@@ -227,10 +228,12 @@
     (map (partial sort-by :page-index) [navbar-pages sidebar-pages])))
 
 (defn write-html
-  "When `clean-urls?` is set, appends `/index.html` before spit; otherwise just spits."
+  "When `clean-urls?` is set, appends `.html` before spit; otherwise just spits."
   [file-uri {:keys [clean-urls?]} data]
   (if clean-urls?
-    (cryogen-io/create-file-recursive (cryogen-io/path file-uri "index.html") data)
+    (cryogen-io/create-file
+      (if (= "/" file-uri) "index.html" (str file-uri ".html"))
+      data)
     (cryogen-io/create-file file-uri data)))
 
 (defn- print-debug-info [data]
