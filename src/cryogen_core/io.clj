@@ -24,7 +24,9 @@
 (def reject-re-filter (partial re-filter nil?))
 
 (defn get-resource [resource-name]
-  (-> resource-name io/resource io/file))
+  (let [resource (io/file resource-name)]
+    (when (.exists resource)
+      resource)))
 
 (defn read-edn-resource [resource]
   (-> resource slurp read-string))
@@ -89,15 +91,14 @@
         (fs/copy src target)))))
 
 (defn copy-resources [config]
-  (copy-resources-from-root "resources/content/" config))
+  (copy-resources-from-root "content/" config))
 
 (defn copy-resources-from-theme
   "Copy resources from theme"
   [config]
-  (let [theme-path (str "themes/" (:theme config))]
-    (copy-resources-from-root
-     "resources/templates/"
-     (merge config
-            {:resources [(str theme-path "/css")
-                         (str theme-path "/js")
-                         (str theme-path "/html/404.html")]}))))
+  (copy-resources-from-root
+   (str "templates/themes/" (:theme config) "/")
+   (merge config
+          {:resources ["css"
+                       "js"
+                       "html/404.html"]})))

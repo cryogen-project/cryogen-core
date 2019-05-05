@@ -42,8 +42,9 @@ and more content.
   (fs/create (File. (str dir File/separator file))))
 
 (defn- reset-resources []
-  (fs/delete-dir "resources")
-  (create-entry "resources" ".gitkeep"))
+  (doseq [dir ["resources" "content"]]
+    (fs/delete-dir dir)
+    (create-entry dir ".gitkeep")))
 
 (defn- check-for-pages [mu]
   (find-pages {:page-root "pages"} mu))
@@ -59,10 +60,10 @@ and more content.
       (is (empty? (check-for-pages mu))))
 
     (let [dir->file
-          [[check-for-posts "resources/content/md/posts" "post.md"]
-           [check-for-posts "resources/content/posts" "post.md"]
-           [check-for-pages "resources/content/md/pages" "page.md"]
-           [check-for-pages "resources/content/pages" "page.md"]]]
+          [[check-for-posts "content/md/posts" "post.md"]
+           [check-for-posts "content/posts" "post.md"]
+           [check-for-pages "content/md/pages" "page.md"]
+           [check-for-pages "content/pages" "page.md"]]]
       (doseq [[check-fn dir file] dir->file]
         (testing (str "Finds files in " dir)
           (create-entry dir file)
@@ -89,7 +90,7 @@ and more content.
     (let [path (if with-dir?
                  (str (m/dir mu) "/" dir)
                  dir)]
-      (create-entry (str "resources/content/" path)
+      (create-entry (str "content/" path)
                     (str "entry" (m/ext mu)))))
   (with-markup mu
     (copy-resources-from-markup-folders

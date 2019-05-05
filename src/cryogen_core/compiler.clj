@@ -432,10 +432,10 @@
   [posts config]
   (map #(update-in % [:tags] (partial map (partial tag-info config))) posts))
 
-(defn- template-dir?
-  "Checks that the dir exists in the templates directory."
+(defn- content-dir?
+  "Checks that the dir exists in the content directory."
   [dir]
-  (.isDirectory (io/file (str "resources/content/" dir))))
+  (.isDirectory (io/file (str "content/" dir))))
 
 (defn- markup-entries [post-root page-root]
   (let [entries (for [mu (m/markups)
@@ -447,7 +447,7 @@
   "Copy resources from markup folders. This does not copy the markup entries."
   [{:keys [post-root page-root] :as config}]
   (let [folders (->> (markup-entries post-root page-root)
-                     (filter template-dir?))]
+                     (filter content-dir?))]
     (cryogen-io/copy-resources
       (merge config
              {:resources     folders
@@ -532,12 +532,12 @@
                         :rss-uri       (cryogen-io/path "/" blog-prefix rss-name)
                         :site-url      (if (.endsWith site-url "/") (.substring site-url 0 (dec (count site-url))) site-url)})]
 
-     (set-custom-resource-path! (str "file:resources/templates/themes/" theme))
+     (set-custom-resource-path! (str "file:templates/themes/" theme))
      (cryogen-io/wipe-public-folder keep-files)
      (println (blue "compiling sass"))
      (sass/compile-sass->css!
       (merge (select-keys config [:sass-path :compass-path :sass-src :ignored-files])
-             {:base-dir  "resources/templates/"}))
+             {:base-dir  "templates/"}))
      (println (blue "copying theme resources"))
      (cryogen-io/copy-resources-from-theme config)
      (println (blue "copying resources"))
