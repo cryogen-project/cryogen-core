@@ -77,7 +77,7 @@
           (copy-dir f out ignored-files)
           (io/copy f out))))))
 
-(defn- copy-resources-from-root [root {:keys [blog-prefix resources ignored-files]}]
+(defn copy-resources [root {:keys [blog-prefix resources ignored-files]}]
   (doseq [resource resources]
     (let [src    (str root resource)
           target (path public blog-prefix (fs/base-name resource))]
@@ -90,14 +90,11 @@
         :else
         (fs/copy src target)))))
 
-(defn copy-resources [config]
-  (copy-resources-from-root "content/" config))
-
 (defn copy-resources-from-theme
   "Copy resources from theme"
   [config]
-  (copy-resources-from-root
-   (str "templates/themes/" (:theme config) "/")
+  (copy-resources
+   (str "themes/" (:theme config) "/")
    (merge config
           {:resources ["css"
                        "js"

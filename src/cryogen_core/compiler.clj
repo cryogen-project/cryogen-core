@@ -33,10 +33,10 @@
   (re-pattern (str (string/replace ext "." "\\.") "$")))
 
 (defn find-entries
-  "Returns a list of files under the templates directory according to the
+  "Returns a list of files under the content directory according to the
   implemented Markup protocol and specified root directory. It defaults to
   looking under the implemented protocol's subdirectory, but fallsback to look
-  at the templates directory."
+  at the content directory."
   [root mu ignored-files]
   (let [assets (cryogen-io/find-assets
                  (cryogen-io/path "content" (m/dir mu) root)
@@ -449,9 +449,10 @@
   (let [folders (->> (markup-entries post-root page-root)
                      (filter content-dir?))]
     (cryogen-io/copy-resources
-      (merge config
-             {:resources     folders
-              :ignored-files (map #(re-pattern-from-ext (m/ext %)) (m/markups))}))))
+     "content/"
+     (merge config
+            {:resources     folders
+             :ignored-files (map #(re-pattern-from-ext (m/ext %)) (m/markups))}))))
 
 (defn process-config
   "Reads the config file"
@@ -479,12 +480,12 @@
     :else (last vs)))
 
 (defn read-config []
-  (let [config (-> "templates/config.edn"
+  (let [config (-> "config.edn"
                    cryogen-io/get-resource
                    cryogen-io/read-edn-resource)
         theme-config-resource (-> config
                                   :theme
-                                  (#(str "templates/themes/" % "/config.edn"))
+                                  (#(str "themes/" % "/config.edn"))
                                   cryogen-io/get-resource)]
     (if (and (:theme config) theme-config-resource)
       (deep-merge false (cryogen-io/read-edn-resource theme-config-resource) config)
@@ -532,16 +533,16 @@
                         :rss-uri       (cryogen-io/path "/" blog-prefix rss-name)
                         :site-url      (if (.endsWith site-url "/") (.substring site-url 0 (dec (count site-url))) site-url)})]
 
-     (set-custom-resource-path! (str "file:templates/themes/" theme))
+     (set-custom-resource-path! (str "file:themes/" theme))
      (cryogen-io/wipe-public-folder keep-files)
      (println (blue "compiling sass"))
      (sass/compile-sass->css!
       (merge (select-keys config [:sass-path :compass-path :sass-src :ignored-files])
-             {:base-dir  "templates/"}))
+             {:base-dir  ""}))
      (println (blue "copying theme resources"))
      (cryogen-io/copy-resources-from-theme config)
      (println (blue "copying resources"))
-     (cryogen-io/copy-resources config)
+     (cryogen-io/copy-resources "" config)
      (copy-resources-from-markup-folders config)
      (compile-pages params other-pages)
      (compile-posts params posts)
