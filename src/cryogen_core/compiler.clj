@@ -39,13 +39,13 @@
   at the templates directory."
   [root mu ignored-files]
   (let [assets (cryogen-io/find-assets
-                 (cryogen-io/path "templates" (m/dir mu) root)
+                 (cryogen-io/path "content" (m/dir mu) root)
                  (m/ext mu)
                  ignored-files)]
     (if (seq assets)
       assets
       (cryogen-io/find-assets
-        (cryogen-io/path "templates" root)
+        (cryogen-io/path "content" root)
         (m/ext mu)
         ignored-files))))
 
@@ -435,7 +435,7 @@
 (defn- template-dir?
   "Checks that the dir exists in the templates directory."
   [dir]
-  (.isDirectory (io/file (str "resources/templates/" dir))))
+  (.isDirectory (io/file (str "resources/content/" dir))))
 
 (defn- markup-entries [post-root page-root]
   (let [entries (for [mu (m/markups)

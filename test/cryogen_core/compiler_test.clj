@@ -59,10 +59,10 @@ and more content.
       (is (empty? (check-for-pages mu))))
 
     (let [dir->file
-          [[check-for-posts "resources/templates/md/posts" "post.md"]
-           [check-for-posts "resources/templates/posts" "post.md"]
-           [check-for-pages "resources/templates/md/pages" "page.md"]
-           [check-for-pages "resources/templates/pages" "page.md"]]]
+          [[check-for-posts "resources/content/md/posts" "post.md"]
+           [check-for-posts "resources/content/posts" "post.md"]
+           [check-for-pages "resources/content/md/pages" "page.md"]
+           [check-for-pages "resources/content/pages" "page.md"]]]
       (doseq [[check-fn dir file] dir->file]
         (testing (str "Finds files in " dir)
           (create-entry dir file)
@@ -89,7 +89,7 @@ and more content.
     (let [path (if with-dir?
                  (str (m/dir mu) "/" dir)
                  dir)]
-      (create-entry (str "resources/templates/" path)
+      (create-entry (str "resources/content/" path)
                     (str "entry" (m/ext mu)))))
   (with-markup mu
     (copy-resources-from-markup-folders

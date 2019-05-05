@@ -75,9 +75,9 @@
           (copy-dir f out ignored-files)
           (io/copy f out))))))
 
-(defn copy-resources [{:keys [blog-prefix resources ignored-files]}]
+(defn- copy-resources-from-root [root {:keys [blog-prefix resources ignored-files]}]
   (doseq [resource resources]
-    (let [src    (str "resources/templates/" resource)
+    (let [src    (str root resource)
           target (path public blog-prefix (fs/base-name resource))]
       (println "\t" (cyan src) "-->" (cyan target))
       (cond
@@ -88,12 +88,16 @@
         :else
         (fs/copy src target)))))
 
+(defn copy-resources [config]
+  (copy-resources-from-root "resources/content/" config))
+
 (defn copy-resources-from-theme
   "Copy resources from theme"
   [config]
   (let [theme-path (str "themes/" (:theme config))]
-    (copy-resources
-      (merge config
-             {:resources [(str theme-path "/css")
-                          (str theme-path "/js")
-                          (str theme-path "/html/404.html")]}))))
+    (copy-resources-from-root
+     "resources/templates/"
+     (merge config
+            {:resources [(str theme-path "/css")
+                         (str theme-path "/js")
+                         (str theme-path "/html/404.html")]}))))
