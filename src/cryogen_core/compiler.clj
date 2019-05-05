@@ -435,12 +435,12 @@
 (defn- content-dir?
   "Checks that the dir exists in the content directory."
   [dir]
-  (.isDirectory (io/file (str "content/" dir))))
+  (.isDirectory (io/file (cryogen-io/path "content" dir))))
 
 (defn- markup-entries [post-root page-root]
   (let [entries (for [mu (m/markups)
                       t  (distinct [post-root page-root])]
-                  [(str (m/dir mu) "/" t) t])]
+                  [(cryogen-io/path (m/dir mu) t) t])]
     (apply concat entries)))
 
 (defn copy-resources-from-markup-folders
@@ -449,7 +449,7 @@
   (let [folders (->> (markup-entries post-root page-root)
                      (filter content-dir?))]
     (cryogen-io/copy-resources
-     "content/"
+     "content"
      (merge config
             {:resources     folders
              :ignored-files (map #(re-pattern-from-ext (m/ext %)) (m/markups))}))))
@@ -485,7 +485,7 @@
                    cryogen-io/read-edn-resource)
         theme-config-resource (-> config
                                   :theme
-                                  (#(str "themes/" % "/config.edn"))
+                                  (#(cryogen-io/path "themes" % "config.edn"))
                                   cryogen-io/get-resource)]
     (if (and (:theme config) theme-config-resource)
       (deep-merge false (cryogen-io/read-edn-resource theme-config-resource) config)
@@ -533,7 +533,7 @@
                         :rss-uri       (cryogen-io/path "/" blog-prefix rss-name)
                         :site-url      (if (.endsWith site-url "/") (.substring site-url 0 (dec (count site-url))) site-url)})]
 
-     (set-custom-resource-path! (str "file:themes/" theme))
+     (set-custom-resource-path! (cryogen-io/path "file:themes" theme))
      (cryogen-io/wipe-public-folder keep-files)
      (println (blue "compiling sass"))
      (sass/compile-sass->css!

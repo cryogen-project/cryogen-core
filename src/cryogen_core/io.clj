@@ -79,7 +79,7 @@
 
 (defn copy-resources [root {:keys [blog-prefix resources ignored-files]}]
   (doseq [resource resources]
-    (let [src    (str root resource)
+    (let [src    (path root resource)
           target (path public blog-prefix (fs/base-name resource))]
       (println "\t" (cyan src) "-->" (cyan target))
       (cond
@@ -94,7 +94,7 @@
   "Copy resources from theme"
   [config]
   (copy-resources
-   (str "themes/" (:theme config) "/")
+   (path "themes" (:theme config))
    (merge config
           {:resources ["css"
                        "js"
