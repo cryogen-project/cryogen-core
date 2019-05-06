@@ -540,7 +540,7 @@
      (println (blue "compiling sass"))
      (sass/compile-sass->css!
       (merge (select-keys config [:sass-path :compass-path :sass-src :ignored-files])
-             {:base-dir  ""}))
+             {:base-dir  "."}))
      (println (blue "copying theme resources"))
      (cryogen-io/copy-resources-from-theme config)
      (println (blue "copying resources"))
