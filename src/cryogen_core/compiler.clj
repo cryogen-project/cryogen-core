@@ -20,6 +20,8 @@
 
 (cache-off!)
 
+(def content-root "content")
+
 (defn root-uri
   "Creates the uri for posts and pages. Returns root-path by default"
   [k config]
@@ -39,13 +41,13 @@
   at the content directory."
   [root mu ignored-files]
   (let [assets (cryogen-io/find-assets
-                 (cryogen-io/path "content" (m/dir mu) root)
+                 (cryogen-io/path content-root (m/dir mu) root)
                  (m/ext mu)
                  ignored-files)]
     (if (seq assets)
       assets
       (cryogen-io/find-assets
-        (cryogen-io/path "content" root)
+        (cryogen-io/path content-root root)
         (m/ext mu)
         ignored-files))))
 
@@ -435,7 +437,7 @@
 (defn- content-dir?
   "Checks that the dir exists in the content directory."
   [dir]
-  (.isDirectory (io/file (cryogen-io/path "content" dir))))
+  (.isDirectory (io/file (cryogen-io/path content-root dir))))
 
 (defn- markup-entries [post-root page-root]
   (let [entries (for [mu (m/markups)
@@ -449,7 +451,7 @@
   (let [folders (->> (markup-entries post-root page-root)
                      (filter content-dir?))]
     (cryogen-io/copy-resources
-     "content"
+     content-root
      (merge config
             {:resources     folders
              :ignored-files (map #(re-pattern-from-ext (m/ext %)) (m/markups))}))))
