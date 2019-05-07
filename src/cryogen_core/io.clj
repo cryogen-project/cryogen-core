@@ -4,7 +4,7 @@
             [me.raynes.fs :as fs]
             [text-decoration.core :refer :all]))
 
-(def public "resources/public")
+(def public "public")
 
 (defn path
   "Creates path from given parts, ignore empty elements"

@@ -42,7 +42,7 @@ and more content.
   (fs/create (File. (str dir File/separator file))))
 
 (defn- reset-resources []
-  (doseq [dir ["resources" "content"]]
+  (doseq [dir ["public" "content"]]
     (fs/delete-dir dir)
     (create-entry dir ".gitkeep")))
 
@@ -98,7 +98,7 @@ and more content.
        :page-root pages-root
        :blog-prefix "/blog"}))
   (doseq [dir dirs]
-    (is (.isDirectory (File. (str "resources/public/blog/" dir))))))
+    (is (.isDirectory (File. (str "public/blog/" dir))))))
 
 (deftest test-copy-resources-from-markup-folders
   (reset-resources)
@@ -107,8 +107,8 @@ and more content.
       {:post-root "pages"
        :page-root "posts"
        :blog-prefix "/blog"})
-    (is (not (.isDirectory (File. (str "resources/public/blog/pages")))))
-    (is (not (.isDirectory (File. (str "resources/public/blog/posts"))))))
+    (is (not (.isDirectory (File. (str "public/blog/pages")))))
+    (is (not (.isDirectory (File. (str "public/blog/posts"))))))
 
   (reset-resources)
   (doseq [mu [(markdown) (asciidoc)]]
