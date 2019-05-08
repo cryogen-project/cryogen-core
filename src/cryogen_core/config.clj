@@ -11,18 +11,31 @@
     uri
     (config (-> k (name) (string/replace #"-uri$" "") (keyword)))))
 
+
 (defn process-config
   "Reads the config file"
   [config]
   (try
     (s/validate schemas/Config config)
-    (-> config
-        (update-in [:tag-root-uri] (fnil identity ""))
-        (update-in [:sass-src] (fnil identity ["css"]))
-        (update-in [:sass-path] (fnil identity "sass"))
-        (update-in [:compass-path] (fnil identity "compass"))
-        (assoc :page-root-uri (root-uri :page-root-uri config)
-               :post-root-uri (root-uri :post-root-uri config)))
+    (let [config (-> config
+                     (update-in [:tag-root-uri] (fnil identity ""))
+                     (update-in [:sass-src] (fnil identity ["css"]))
+                     (update-in [:sass-path] (fnil identity "sass"))
+                     (update-in [:compass-path] (fnil identity "compass"))
+                     (update-in [:public-dest] (fnil identity "public"))
+                     (assoc :page-root-uri (root-uri :page-root-uri config)
+                            :post-root-uri (root-uri :post-root-uri config)))
+          check-overlap (fn [dirs]
+                          ;; Replace to use path components instead of strings
+                          (some #(or (string/starts-with? (:public-dest config) %)
+                                     (string/starts-with? % (:public-dest config)))
+                                dirs))]
+      
+      (if (or (= (string/trim (:public-dest config)) "")
+              (check-overlap ["." "content" "themes" "src" "target"])
+              (check-overlap (:resources config)))
+        (throw (new Exception "Dangerous :public-dest value. The contents of this folder will be deleted each time the content is rendered. Specify a sub-folder that doesn't overlap with the default folders or your resource folders."))
+        config))
     (catch Exception e (throw e))))
 
 (defn deep-merge

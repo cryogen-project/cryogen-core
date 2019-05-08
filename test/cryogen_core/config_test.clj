@@ -40,7 +40,30 @@
 
 (deftest test-config-parsing
   (testing "Parsing configuration file"
-    (is (process-config default-config))))
+    (is (process-config default-config))
+    (let [config (process-config default-config)]
+      (testing "Sets default values"
+        (is (= (:public-dest config) "public"))))))
+
+(deftest test-validate-output-path
+  (let [with-dest #(assoc default-config :public-dest %)
+        resources-in-dest (assoc default-config :resources ["resources/img"] :public-dest "resources")
+        dest-in-resources (assoc default-config :resources ["resources"] :public-dest "resources/public")
+        ok-config (assoc default-config :resources ["resources/img"] :public-dest "resources/public")]
+    (testing "Throws if path is root or standard folders"
+      (is (thrown? Exception (process-config (with-dest ""))))
+      (is (thrown? Exception (process-config (with-dest " "))))
+      (is (thrown? Exception (process-config (with-dest "."))))
+      (is (thrown? Exception (process-config (with-dest "content"))))
+      (is (thrown? Exception (process-config (with-dest "themes"))))
+      (is (thrown? Exception (process-config (with-dest "src"))))
+      (is (thrown? Exception (process-config (with-dest "target")))))
+    (testing "Throws if dest contains resources"
+      (is (thrown? Exception (process-config resources-in-dest))))
+    (testing "Throws if resources contains dest"
+      (is (thrown? Exception (process-config dest-in-resources))))
+    (testing "Is OK if dest is side-by-side with resources"
+      (is (process-config ok-config)))))
 
 (deftest test-config-merging
   (let [config {:scalar "orig" :map {:k "orig" :submap {:k "suborig"}} :vec [:orig1 :orig2]}]
