@@ -9,6 +9,7 @@
             [selmer.util :refer [set-custom-resource-path!]]
             [text-decoration.core :refer :all]
             [cryogen-core.io :as cryogen-io]
+            [cryogen-core.config :refer [resolve-config]]
             [cryogen-core.klipse :as klipse]
             [cryogen-core.markup :as m]
             [cryogen-core.rss :as rss]
@@ -21,13 +22,6 @@
 (cache-off!)
 
 (def content-root "content")
-
-(defn root-uri
-  "Creates the uri for posts and pages. Returns root-path by default"
-  [k config]
-  (if-let [uri (k config)]
-    uri
-    (config (-> k (name) (string/replace #"-uri$" "") (keyword)))))
 
 (defn re-pattern-from-ext
   "Creates a properly quoted regex pattern for the given file extension"
@@ -456,43 +450,6 @@
             {:resources     folders
              :ignored-files (map #(re-pattern-from-ext (m/ext %)) (m/markups))}))))
 
-(defn process-config
-  "Reads the config file"
-  [config]
-  (try
-    (s/validate schemas/Config config)
-    (-> config
-        (update-in [:tag-root-uri] (fnil identity ""))
-        (update-in [:sass-src] (fnil identity ["css"]))
-        (update-in [:sass-path] (fnil identity "sass"))
-        (update-in [:compass-path] (fnil identity "compass"))
-        (assoc :page-root-uri (root-uri :page-root-uri config)
-               :post-root-uri (root-uri :post-root-uri config)))
-    (catch Exception e (throw e))))
-
-(defn deep-merge
-  "Recursively merges maps. When override is true, for scalars and vectors,
-  the last value wins. When override is false, vectors are merged, but for
-  scalars, the last value still wins."
-  [override & vs]
-  (cond
-    (= (count vs) 1) vs
-    (every? map? vs) (apply merge-with (partial deep-merge override) vs)
-    (and (not override) (every? sequential? vs)) (apply into vs)
-    :else (last vs)))
-
-(defn read-config []
-  (let [config (-> "config.edn"
-                   cryogen-io/get-resource
-                   cryogen-io/read-edn-resource)
-        theme-config-resource (-> config
-                                  :theme
-                                  (#(cryogen-io/path "themes" % "config.edn"))
-                                  cryogen-io/get-resource)]
-    (if (and (:theme config) theme-config-resource)
-      (deep-merge false (cryogen-io/read-edn-resource theme-config-resource) config)
-      config)))
-
 (defn compile-assets
   "Generates all the html and copies over resources specified in the config"
   ([]
@@ -503,7 +460,7 @@
      (println (yellow "overriding config.edn with:"))
      (pprint overrides))
    (let [{:keys [^String site-url blog-prefix rss-name recent-posts keep-files ignored-files previews? author-root-uri theme]
-          :as   config} (process-config (deep-merge true (read-config) overrides))
+          :as   config} (resolve-config overrides)
          posts        (map klipse/klipsify (add-prev-next (read-posts config)))
          posts-by-tag (group-by-tags posts)
          posts        (tag-posts posts config)
