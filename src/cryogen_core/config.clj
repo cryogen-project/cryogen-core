@@ -4,13 +4,18 @@
             [cryogen-core.schemas :as schemas]
             [cryogen-core.io :as cryogen-io]))
 
+(defn subpath?
+  "Checks if either path is a subpath of the other"
+  [p1 p2]
+  (let [parts #(string/split % #"/")]
+    (every? #{true} (map #(= %1 %2) (parts p1) (parts p2)))))
+
 (defn root-uri
   "Creates the uri for posts and pages. Returns root-path by default"
   [k config]
   (if-let [uri (k config)]
     uri
     (config (-> k (name) (string/replace #"-uri$" "") (keyword)))))
-
 
 (defn process-config
   "Reads the config file"
@@ -26,15 +31,13 @@
                      (assoc :page-root-uri (root-uri :page-root-uri config)
                             :post-root-uri (root-uri :post-root-uri config)))
           check-overlap (fn [dirs]
-                          ;; Replace to use path components instead of strings
-                          (some #(or (string/starts-with? (:public-dest config) %)
-                                     (string/starts-with? % (:public-dest config)))
-                                dirs))]
+                          (some #(subpath? % (:public-dest config)) dirs))]
       
       (if (or (= (string/trim (:public-dest config)) "")
-              (check-overlap ["." "content" "themes" "src" "target"])
+              (string/starts-with? (:public-dest config) ".")
+              (check-overlap ["content" "themes" "src" "target"])
               (check-overlap (:resources config)))
-        (throw (new Exception "Dangerous :public-dest value. The contents of this folder will be deleted each time the content is rendered. Specify a sub-folder that doesn't overlap with the default folders or your resource folders."))
+        (throw (new Exception "Dangerous :public-dest value. The folder will be deleted each time the content is rendered. Specify a sub-folder that doesn't overlap with the default folders or your resource folders."))
         config))
     (catch Exception e (throw e))))
 
