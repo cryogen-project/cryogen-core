@@ -66,5 +66,7 @@
 
 (defn resolve-config
   "Loads the config file, merging in the overrides and, and filling in missing defaults"
-  [overrides]
-  (process-config (deep-merge true (read-config) overrides)))
+  ([]
+   (resolve-config {}))
+  ([overrides]
+   (process-config (deep-merge true (read-config) overrides))))
