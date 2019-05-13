@@ -11,7 +11,7 @@
     (.format fmt date)))
 
 (defn loc [^java.io.File f]
-  (-> f (.getAbsolutePath) (.split (str cryogen-io/public "/")) second))
+  (-> f (.getAbsolutePath) (.split (cryogen-io/path cryogen-io/public "/")) second))
 
 (defn generate [site-url ignored-files]
   (with-out-str
