@@ -4,7 +4,11 @@
             [me.raynes.fs :as fs]
             [text-decoration.core :refer :all]))
 
-(def public "public")
+(def ^:dynamic public "public")
+
+(defn set-public-path!
+  [path]
+  (alter-var-root #'public (constantly path)))
 
 (defn path
   "Creates path from given parts, ignore empty elements"

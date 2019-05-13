@@ -493,6 +493,8 @@
                         :site-url      (if (.endsWith site-url "/") (.substring site-url 0 (dec (count site-url))) site-url)})]
 
      (set-custom-resource-path! (cryogen-io/path "file:themes" theme))
+     (cryogen-io/set-public-path! (:public-dest config))
+     
      (cryogen-io/wipe-public-folder keep-files)
      (println (blue "compiling sass"))
      (sass/compile-sass->css! config)
