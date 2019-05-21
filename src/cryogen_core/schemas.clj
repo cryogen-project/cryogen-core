@@ -54,7 +54,9 @@
    :previews?                             s/Bool
    (s/optional-key :posts-per-page)       s/Int
    (s/optional-key :blocks-per-preview)   s/Int
-   :clean-urls?                           s/Bool
+   :clean-urls                            (s/enum :trailing-slash
+                                                  :no-trailing-slash
+                                                  :dirty)
    (s/optional-key :collapse-subdirs?)    s/Bool
    :hide-future-posts?                    s/Bool
    (s/optional-key :klipse)               Klipse
