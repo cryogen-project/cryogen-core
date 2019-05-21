@@ -160,7 +160,7 @@ and more content.
    :posts-per-page       5
    :blocks-per-preview   2
    :previews?            false
-   :clean-urls?          true
+   :clean-urls           :trailing-slash
    :collapse-subdirs?    false
    :hide-future-posts?   true
    :klipse               {}
