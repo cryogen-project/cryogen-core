@@ -501,7 +501,7 @@
      (println (blue "copying theme resources"))
      (cryogen-io/copy-resources-from-theme config)
      (println (blue "copying resources"))
-     (cryogen-io/copy-resources "" config)
+     (cryogen-io/copy-resources "content" config)
      (copy-resources-from-markup-folders config)
      (compile-pages params other-pages)
      (compile-posts params posts)

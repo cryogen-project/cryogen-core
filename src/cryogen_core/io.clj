@@ -100,6 +100,8 @@
   (copy-resources
    (path "themes" (:theme config))
    (merge config
-          {:resources ["css"
-                       "js"
-                       "html/404.html"]})))
+          {:resources (concat
+                       ["css"
+                        "js"
+                        "html/404.html"]
+                       (:theme-resources config))})))

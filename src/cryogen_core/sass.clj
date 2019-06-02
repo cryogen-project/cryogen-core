@@ -48,14 +48,16 @@
   "Given a directory or directories in sass-src, looks for all Sass files and compiles them.
    Prompts you to install sass if it finds Sass files but can't find the command. Shows you
    any problems it comes across when compiling. "
-  [{:keys [sass-src sass-path ignored-files] :as opts}]
-  (if (and (not (empty? sass-src))
+  [{:keys [sass-src theme-sass-src sass-path ignored-files] :as opts}]
+  (if (and (not (empty? (concat sass-src theme-sass-src)))
            (not (sass-installed? sass-path)))
     (println
       (red (str "Sass seems not to be installed, but you have scss / sass files in "
                 sass-src
                 " - You might want to install it here: sass-lang.com")))
-    (doseq [sass-dir sass-src]
+    (doseq [sass-dir (concat
+                      (map (partial cryogen-io/path "content") sass-src)
+                      (map (partial cryogen-io/path "themes" (:theme opts)) theme-sass-src))]
       (when (seq (find-sass-files sass-dir ignored-files))
         (println "\t" (cyan sass-dir) "-->" (cyan sass-dir))
         (let [result (compile-sass-dir! (assoc opts :sass-dir sass-dir))]

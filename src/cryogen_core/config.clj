@@ -35,8 +35,7 @@
       
       (if (or (= (string/trim (:public-dest config)) "")
               (string/starts-with? (:public-dest config) ".")
-              (check-overlap ["content" "themes" "src" "target"])
-              (check-overlap (:resources config)))
+              (check-overlap ["content" "themes" "src" "target"]))
         (throw (new Exception "Dangerous :public-dest value. The folder will be deleted each time the content is rendered. Specify a sub-folder that doesn't overlap with the default folders or your resource folders."))
         config))
     (catch Exception e (throw e))))
@@ -53,16 +52,20 @@
     :else (last vs)))
 
 (defn read-config []
-  (let [config (-> "config.edn"
+  (let [config (-> "content/config.edn"
                    cryogen-io/get-resource
                    cryogen-io/read-edn-resource)
         theme-config-resource (-> config
                                   :theme
                                   (#(cryogen-io/path "themes" % "config.edn"))
-                                  cryogen-io/get-resource)]
-    (if (and (:theme config) theme-config-resource)
-      (deep-merge false (cryogen-io/read-edn-resource theme-config-resource) config)
-      config)))
+                                  cryogen-io/get-resource)
+        theme-config (if theme-config-resource
+                       (cryogen-io/read-edn-resource theme-config-resource))]
+    (assoc config
+           :theme-resources
+           (or (:resources theme-config) [])
+           :theme-sass-src
+           (or (:sass-src theme-config) []))))
 
 (defn resolve-config
   "Loads the config file, merging in the overrides and, and filling in missing defaults"
