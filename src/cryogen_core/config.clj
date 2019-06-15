@@ -24,10 +24,14 @@
     (s/validate schemas/Config config)
     (let [config (-> config
                      (update-in [:tag-root-uri] (fnil identity ""))
+                     (update-in [:public-dest] (fnil identity "public"))
+                     (update-in [:recent-posts] (fnil identity 3))
+                     (update-in [:archive-group-format] (fnil identity "yyyy MMMM"))
                      (update-in [:sass-src] (fnil identity ["css"]))
                      (update-in [:sass-path] (fnil identity "sass"))
                      (update-in [:compass-path] (fnil identity "compass"))
-                     (update-in [:public-dest] (fnil identity "public"))
+                     (update-in [:posts-per-page] (fnil identity 5))
+                     (update-in [:blocks-per-preview] (fnil identity 2))
                      (assoc :page-root-uri (root-uri :page-root-uri config)
                             :post-root-uri (root-uri :post-root-uri config)))
           check-overlap (fn [dirs]

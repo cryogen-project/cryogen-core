@@ -18,11 +18,10 @@
        (string/join "/")
        (#(string/replace % #"/+" "/"))))
 
-(defn re-filter [bool-fn re & other-res]
-  (let [res (conj other-res re)]
-    (reify java.io.FilenameFilter
-      (accept [this _ name]
-        (bool-fn (some #(re-find % name) res))))))
+(defn re-filter [bool-fn & res]
+  (reify java.io.FilenameFilter
+    (accept [this _ name]
+            (bool-fn (some #(re-find % name) res)))))
 
 (def match-re-filter (partial re-filter some?))
 (def reject-re-filter (partial re-filter nil?))

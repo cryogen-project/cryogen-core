@@ -36,29 +36,30 @@
    (s/optional-key :page-root-uri)        (s/maybe s/Str)
    (s/optional-key :tag-root-uri)         s/Str
    (s/optional-key :author-root-uri)      s/Str
+   (s/optional-key :public-dest)          s/Str
    :blog-prefix                           s/Str
    :rss-name                              s/Str
-   :rss-filters                           [s/Str]
-   :recent-posts                          s/Int
+   (s/optional-key :rss-filters)          [s/Str]
+   (s/optional-key :recent-posts)         s/Int
    :post-date-format                      s/Str
    (s/optional-key :archive-group-format) s/Str
    (s/optional-key :sass-src)             [s/Str]
    (s/optional-key :sass-path)            s/Str
    (s/optional-key :compass-path)         s/Str
    :theme                                 s/Str
-   :resources                             [s/Str]
-   :keep-files                            [s/Str]
-   :disqus?                               s/Bool
+   (s/optional-key :resources)            [s/Str]
+   (s/optional-key :keep-files)           [s/Str]
+   (s/optional-key :disqus?)              s/Bool
    (s/optional-key :disqus-shortname)     s/Str
-   :ignored-files                         [s/Regex]
-   :previews?                             s/Bool
+   (s/optional-key :ignored-files)        [s/Regex]
+   (s/optional-key :previews?)            s/Bool
    (s/optional-key :posts-per-page)       s/Int
    (s/optional-key :blocks-per-preview)   s/Int
    :clean-urls                            (s/enum :trailing-slash
                                                   :no-trailing-slash
                                                   :dirty)
    (s/optional-key :collapse-subdirs?)    s/Bool
-   :hide-future-posts?                    s/Bool
+   (s/optional-key :hide-future-posts?)   s/Bool
    (s/optional-key :klipse)               Klipse
-   :debug?                                s/Bool
+   (s/optional-key :debug?)               s/Bool
    s/Keyword                              s/Any})

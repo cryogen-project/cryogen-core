@@ -129,7 +129,7 @@
       (let [date            (if (:date page-meta)
                               (.parse (java.text.SimpleDateFormat. (:post-date-format config)) (:date page-meta))
                               (parse-post-date file-name (:post-date-format config)))
-            archive-fmt     (java.text.SimpleDateFormat. (:archive-group-format config "yyyy MMMM") (Locale/getDefault))
+            archive-fmt     (java.text.SimpleDateFormat. (:archive-group-format config) (Locale/getDefault))
             formatted-group (.format archive-fmt date)]
         {:date                    date
          :formatted-archive-group formatted-group
@@ -268,7 +268,7 @@
 
 (defn compile-posts
   "Compiles all the posts into html and spits them out into the public folder"
-  [{:keys [blog-prefix post-root-uri disqus-shortname debug?] :as params} posts]
+  [{:keys [blog-prefix post-root-uri debug?] :as params} posts]
   (when-not (empty? posts)
     (println (blue "compiling posts"))
     (cryogen-io/create-folder (cryogen-io/path "/" blog-prefix post-root-uri))
@@ -280,11 +280,10 @@
                   params
                   (render-file (str "/html/" (:layout post))
                                (merge params
-                                      {:active-page      "posts"
-                                       :selmer/context   (cryogen-io/path "/" blog-prefix "/")
-                                       :post             post
-                                       :disqus-shortname disqus-shortname
-                                       :uri              uri}))))))
+                                      {:active-page    "posts"
+                                       :selmer/context (cryogen-io/path "/" blog-prefix "/")
+                                       :post           post
+                                       :uri            uri}))))))
 
 (defn compile-tags
   "Compiles all the tag pages into html and spits them out into the public folder"
@@ -383,7 +382,7 @@
 
 (defn compile-index
   "Compiles the index page into html and spits it out into the public folder"
-  [{:keys [blog-prefix disqus? debug? home-page] :as params}]
+  [{:keys [blog-prefix debug? home-page] :as params}]
   (println (blue "compiling index"))
   (let [uri (page-uri "index.html" params)]
     (when debug?
@@ -394,7 +393,6 @@
                              (merge params
                                     {:active-page    "home"
                                      :home           true
-                                     :disqus?        disqus?
                                      :selmer/context (cryogen-io/path "/" blog-prefix "/")
                                      :uri            uri
                                      :post           home-page
@@ -530,7 +528,7 @@
      (println (blue "generating main rss"))
      (->> (rss/make-channel config posts)
           (cryogen-io/create-file (cryogen-io/path "/" blog-prefix rss-name)))
-     (println (blue "generating filtered rss"))
+     (if (:rss-filters config) (println (blue "generating filtered rss")))
      (rss/make-filtered-channels config posts-by-tag))))
 
 (defn compile-assets-timed
