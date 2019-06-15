@@ -25,9 +25,9 @@
 (defn find-sass-files
   "Given a directory, gets files, filtered to those having scss or sass
    extension. Ignores files matching any ignored regexps."
-  [base-dir dir ignored-files]
+  [dir ignored-files]
   (let [^java.io.FilenameFilter filename-filter (cryogen-io/match-re-filter #"(?i:s[ca]ss$)")]
-    (->> (.listFiles (io/file base-dir dir) filename-filter)
+    (->> (.listFiles (io/file "." dir) filename-filter)
          (filter #(not (.isDirectory ^java.io.File %)))
          (filter (cryogen-io/ignore ignored-files))
          (map #(.getName ^java.io.File %)))))
@@ -36,9 +36,9 @@
   "Given a sass directory (or file), output the resulting CSS in the
    same dir. All error handling is done by sh / launching the sass
    command."
-  [{:keys [sass-dir sass-path compass-path base-dir]}]
+  [{:keys [sass-dir sass-path compass-path]}]
   (shell/with-sh-dir
-    base-dir
+    "."
     (let [sass-argument (str sass-dir ":" sass-dir)]
       (if (compass-installed? compass-path)
         (sh sass-path "--compass" "--update" sass-argument)
@@ -48,15 +48,17 @@
   "Given a directory or directories in sass-src, looks for all Sass files and compiles them.
    Prompts you to install sass if it finds Sass files but can't find the command. Shows you
    any problems it comes across when compiling. "
-  [{:keys [sass-src sass-path ignored-files base-dir] :as opts}]
-  (if (and (not (empty? sass-src))
+  [{:keys [sass-src theme-sass-src sass-path ignored-files] :as opts}]
+  (if (and (not (empty? (concat sass-src theme-sass-src)))
            (not (sass-installed? sass-path)))
     (println
       (red (str "Sass seems not to be installed, but you have scss / sass files in "
                 sass-src
                 " - You might want to install it here: sass-lang.com")))
-    (doseq [sass-dir sass-src]
-      (when (seq (find-sass-files base-dir sass-dir ignored-files))
+    (doseq [sass-dir (concat
+                      (map (partial cryogen-io/path "content") sass-src)
+                      (map (partial cryogen-io/path "themes" (:theme opts)) theme-sass-src))]
+      (when (seq (find-sass-files sass-dir ignored-files))
         (println "\t" (cyan sass-dir) "-->" (cyan sass-dir))
         (let [result (compile-sass-dir! (assoc opts :sass-dir sass-dir))]
           (if-not (zero? (:exit result))

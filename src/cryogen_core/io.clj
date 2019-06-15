@@ -4,7 +4,11 @@
             [me.raynes.fs :as fs]
             [text-decoration.core :refer :all]))
 
-(def public "resources/public")
+(def ^:dynamic public "public")
+
+(defn set-public-path!
+  [path]
+  (alter-var-root #'public (constantly path)))
 
 (defn path
   "Creates path from given parts, ignore empty elements"
@@ -24,7 +28,9 @@
 (def reject-re-filter (partial re-filter nil?))
 
 (defn get-resource [resource-name]
-  (-> resource-name io/resource io/file))
+  (let [resource (io/file resource-name)]
+    (when (.exists resource)
+      resource)))
 
 (defn read-edn-resource [resource]
   (-> resource slurp read-string))
@@ -75,9 +81,9 @@
           (copy-dir f out ignored-files)
           (io/copy f out))))))
 
-(defn copy-resources [{:keys [blog-prefix resources ignored-files]}]
+(defn copy-resources [root {:keys [blog-prefix resources ignored-files]}]
   (doseq [resource resources]
-    (let [src    (str "resources/templates/" resource)
+    (let [src    (path root resource)
           target (path public blog-prefix (fs/base-name resource))]
       (println "\t" (cyan src) "-->" (cyan target))
       (cond
@@ -91,9 +97,11 @@
 (defn copy-resources-from-theme
   "Copy resources from theme"
   [config]
-  (let [theme-path (str "themes/" (:theme config))]
-    (copy-resources
-      (merge config
-             {:resources [(str theme-path "/css")
-                          (str theme-path "/js")
-                          (str theme-path "/html/404.html")]}))))
+  (copy-resources
+   (path "themes" (:theme config))
+   (merge config
+          {:resources (concat
+                       ["css"
+                        "js"
+                        "html/404.html"]
+                       (:theme-resources config))})))

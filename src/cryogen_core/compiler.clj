@@ -9,6 +9,7 @@
             [selmer.util :refer [set-custom-resource-path!]]
             [text-decoration.core :refer :all]
             [cryogen-core.io :as cryogen-io]
+            [cryogen-core.config :refer [resolve-config]]
             [cryogen-core.klipse :as klipse]
             [cryogen-core.markup :as m]
             [cryogen-core.rss :as rss]
@@ -20,12 +21,7 @@
 
 (cache-off!)
 
-(defn root-uri
-  "Creates the uri for posts and pages. Returns root-path by default"
-  [k config]
-  (if-let [uri (k config)]
-    uri
-    (config (-> k (name) (string/replace #"-uri$" "") (keyword)))))
+(def content-root "content")
 
 (defn re-pattern-from-ext
   "Creates a properly quoted regex pattern for the given file extension"
@@ -33,19 +29,19 @@
   (re-pattern (str (string/replace ext "." "\\.") "$")))
 
 (defn find-entries
-  "Returns a list of files under the templates directory according to the
+  "Returns a list of files under the content directory according to the
   implemented Markup protocol and specified root directory. It defaults to
   looking under the implemented protocol's subdirectory, but fallsback to look
-  at the templates directory."
+  at the content directory."
   [root mu ignored-files]
   (let [assets (cryogen-io/find-assets
-                 (cryogen-io/path "templates" (m/dir mu) root)
+                 (cryogen-io/path content-root (m/dir mu) root)
                  (m/ext mu)
                  ignored-files)]
     (if (seq assets)
       assets
       (cryogen-io/find-assets
-        (cryogen-io/path "templates" root)
+        (cryogen-io/path content-root root)
         (m/ext mu)
         ignored-files))))
 
@@ -442,63 +438,27 @@
   [posts config]
   (map #(update-in % [:tags] (partial map (partial tag-info config))) posts))
 
-(defn- template-dir?
-  "Checks that the dir exists in the templates directory."
+(defn- content-dir?
+  "Checks that the dir exists in the content directory."
   [dir]
-  (.isDirectory (io/file (str "resources/templates/" dir))))
+  (.isDirectory (io/file (cryogen-io/path content-root dir))))
 
 (defn- markup-entries [post-root page-root]
   (let [entries (for [mu (m/markups)
                       t  (distinct [post-root page-root])]
-                  [(str (m/dir mu) "/" t) t])]
+                  [(cryogen-io/path (m/dir mu) t) t])]
     (apply concat entries)))
 
 (defn copy-resources-from-markup-folders
   "Copy resources from markup folders. This does not copy the markup entries."
   [{:keys [post-root page-root] :as config}]
   (let [folders (->> (markup-entries post-root page-root)
-                     (filter template-dir?))]
+                     (filter content-dir?))]
     (cryogen-io/copy-resources
-      (merge config
-             {:resources     folders
-              :ignored-files (map #(re-pattern-from-ext (m/ext %)) (m/markups))}))))
-
-(defn process-config
-  "Reads the config file"
-  [config]
-  (try
-    (s/validate schemas/Config config)
-    (-> config
-        (update-in [:tag-root-uri] (fnil identity ""))
-        (update-in [:sass-src] (fnil identity ["css"]))
-        (update-in [:sass-path] (fnil identity "sass"))
-        (update-in [:compass-path] (fnil identity "compass"))
-        (assoc :page-root-uri (root-uri :page-root-uri config)
-               :post-root-uri (root-uri :post-root-uri config)))
-    (catch Exception e (throw e))))
-
-(defn deep-merge
-  "Recursively merges maps. When override is true, for scalars and vectors,
-  the last value wins. When override is false, vectors are merged, but for
-  scalars, the last value still wins."
-  [override & vs]
-  (cond
-    (= (count vs) 1) vs
-    (every? map? vs) (apply merge-with (partial deep-merge override) vs)
-    (and (not override) (every? sequential? vs)) (apply into vs)
-    :else (last vs)))
-
-(defn read-config []
-  (let [config (-> "templates/config.edn"
-                   cryogen-io/get-resource
-                   cryogen-io/read-edn-resource)
-        theme-config-resource (-> config
-                                  :theme
-                                  (#(str "templates/themes/" % "/config.edn"))
-                                  cryogen-io/get-resource)]
-    (if (and (:theme config) theme-config-resource)
-      (deep-merge false (cryogen-io/read-edn-resource theme-config-resource) config)
-      config)))
+     content-root
+     (merge config
+            {:resources     folders
+             :ignored-files (map #(re-pattern-from-ext (m/ext %)) (m/markups))}))))
 
 (defn compile-assets
   "Generates all the html and copies over resources specified in the config"
@@ -510,7 +470,7 @@
      (println (yellow "overriding config.edn with:"))
      (pprint overrides))
    (let [{:keys [^String site-url blog-prefix rss-name recent-posts keep-files ignored-files previews? author-root-uri theme]
-          :as   config} (process-config (deep-merge true (read-config) overrides))
+          :as   config} (resolve-config overrides)
          posts        (map klipse/klipsify (add-prev-next (read-posts config)))
          posts-by-tag (group-by-tags posts)
          posts        (tag-posts posts config)
@@ -542,16 +502,16 @@
                         :rss-uri       (cryogen-io/path "/" blog-prefix rss-name)
                         :site-url      (if (.endsWith site-url "/") (.substring site-url 0 (dec (count site-url))) site-url)})]
 
-     (set-custom-resource-path! (str "file:resources/templates/themes/" theme))
+     (set-custom-resource-path! (cryogen-io/path "file:themes" theme))
+     (cryogen-io/set-public-path! (:public-dest config))
+     
      (cryogen-io/wipe-public-folder keep-files)
      (println (blue "compiling sass"))
-     (sass/compile-sass->css!
-      (merge (select-keys config [:sass-path :compass-path :sass-src :ignored-files])
-             {:base-dir  "resources/templates/"}))
+     (sass/compile-sass->css! config)
      (println (blue "copying theme resources"))
      (cryogen-io/copy-resources-from-theme config)
      (println (blue "copying resources"))
-     (cryogen-io/copy-resources config)
+     (cryogen-io/copy-resources "content" config)
      (copy-resources-from-markup-folders config)
      (compile-pages params other-pages)
      (compile-posts params posts)

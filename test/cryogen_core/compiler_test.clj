@@ -42,8 +42,9 @@ and more content.
   (fs/create (File. (str dir File/separator file))))
 
 (defn- reset-resources []
-  (fs/delete-dir "resources")
-  (create-entry "resources" ".gitkeep"))
+  (doseq [dir ["public" "content"]]
+    (fs/delete-dir dir)
+    (create-entry dir ".gitkeep")))
 
 (defn- check-for-pages [mu]
   (find-pages {:page-root "pages"} mu))
@@ -59,10 +60,10 @@ and more content.
       (is (empty? (check-for-pages mu))))
 
     (let [dir->file
-          [[check-for-posts "resources/templates/md/posts" "post.md"]
-           [check-for-posts "resources/templates/posts" "post.md"]
-           [check-for-pages "resources/templates/md/pages" "page.md"]
-           [check-for-pages "resources/templates/pages" "page.md"]]]
+          [[check-for-posts "content/md/posts" "post.md"]
+           [check-for-posts "content/posts" "post.md"]
+           [check-for-pages "content/md/pages" "page.md"]
+           [check-for-pages "content/pages" "page.md"]]]
       (doseq [[check-fn dir file] dir->file]
         (testing (str "Finds files in " dir)
           (create-entry dir file)
@@ -89,7 +90,7 @@ and more content.
     (let [path (if with-dir?
                  (str (m/dir mu) "/" dir)
                  dir)]
-      (create-entry (str "resources/templates/" path)
+      (create-entry (str "content/" path)
                     (str "entry" (m/ext mu)))))
   (with-markup mu
     (copy-resources-from-markup-folders
@@ -97,7 +98,7 @@ and more content.
        :page-root pages-root
        :blog-prefix "/blog"}))
   (doseq [dir dirs]
-    (is (.isDirectory (File. (str "resources/public/blog/" dir))))))
+    (is (.isDirectory (File. (str "public/blog/" dir))))))
 
 (deftest test-copy-resources-from-markup-folders
   (reset-resources)
@@ -106,8 +107,8 @@ and more content.
       {:post-root "pages"
        :page-root "posts"
        :blog-prefix "/blog"})
-    (is (not (.isDirectory (File. (str "resources/public/blog/pages")))))
-    (is (not (.isDirectory (File. (str "resources/public/blog/posts"))))))
+    (is (not (.isDirectory (File. (str "public/blog/pages")))))
+    (is (not (.isDirectory (File. (str "public/blog/posts"))))))
 
   (reset-resources)
   (doseq [mu [(markdown) (asciidoc)]]
@@ -129,68 +130,3 @@ and more content.
           invalid-metadata (reader-string "{:layout \"post\" :title \"Hello World\"}")]
       (is (read-page-meta nil valid-metadata))
       (is (thrown? Exception (read-page-meta nil invalid-metadata))))))
-
-(def default-config
-  {:site-title           "My Awesome Blog"
-   :author               "Bob Bobbert"
-   :description          "This blog is awesome"
-   :site-url             "http://blogawesome.com/"
-   :post-root            "posts"
-   :page-root            "pages"
-   :post-root-uri        "posts-output"
-   :page-root-uri        "pages-output"
-   :tag-root-uri         "tags-output"
-   :author-root-uri      "authors-output"
-   :blog-prefix          "/blog"
-   :rss-name             "feed.xml"
-   :rss-filters          ["cryogen"]
-   :recent-posts         3
-   :post-date-format     "yyyy-MM-dd"
-   :archive-group-format "yyyy MMMM"
-   :sass-src             []
-   :sass-dest            nil
-   :sass-path            "sass"
-   :compass-path         "compass"
-   :theme                "blue"
-   :resources            ["img"]
-   :keep-files           [".git"]
-   :disqus?              false
-   :disqus-shortname     ""
-   :ignored-files        [#"\.#.*" #".*\.swp$"]
-   :posts-per-page       5
-   :blocks-per-preview   2
-   :previews?            false
-   :clean-urls           :trailing-slash
-   :collapse-subdirs?    false
-   :hide-future-posts?   true
-   :klipse               {}
-   :debug?               false})
-
-(deftest test-config-parsing
-  (testing "Parsing configuration file"
-    (is (process-config default-config))))
-
-(deftest test-config-merging
-  (let [config {:scalar "orig" :map {:k "orig" :submap {:k "suborig"}} :vec [:orig1 :orig2]}]
-    (testing "Merging with overrides"
-      (let [override-config (deep-merge true
-                                        config
-                                        {:scalar "override"
-                                         :map {:k "override" :submap {:k "override"}}
-                                         :vec ["override"]})]
-        (is (= "override" (:scalar override-config)))
-        (is (= "override" (get-in override-config [:map :k])))
-        (is (= "override" (get-in override-config [:map :submap :k])))
-        (is (and (some #{"override"} (:vec override-config))
-                 (not-any? #{:orig1} (:vec override-config))))))
-
-    (testing "Merging without overrides"
-      (let [override-config (deep-merge false
-                                        config
-                                        {:scalar "override"
-                                         :map {:k "override" :submap {:k "override"}}
-                                         :vec ["added"]})]
-        (is (= "override" (:scalar override-config)))
-        (is (= "override" (get-in override-config [:map :k])))
-        (is (= "override" (get-in override-config [:map :submap :k])))
-        (is (every? #{"added" :orig1 :orig2} (:vec override-config)))))))

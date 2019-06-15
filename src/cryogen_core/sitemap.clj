@@ -11,7 +11,7 @@
     (.format fmt date)))
 
 (defn loc [^java.io.File f]
-  (-> f (.getAbsolutePath) (.split "resources/public/") second))
+  (-> f (.getAbsolutePath) (.split (cryogen-io/path cryogen-io/public "/")) second))
 
 (defn generate [site-url ignored-files]
   (with-out-str
@@ -19,7 +19,7 @@
       {:tag :urlset
        :attrs {:xmlns "http://www.sitemaps.org/schemas/sitemap/0.9"}
        :content
-       (for [^java.io.File f (cryogen-io/find-assets "public" ".html" ignored-files)]
+       (for [^java.io.File f (cryogen-io/find-assets cryogen-io/public ".html" ignored-files)]
          {:tag :url
           :content
           [{:tag :loc
