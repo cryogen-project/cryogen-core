@@ -66,9 +66,12 @@
   "Creates a URI from file name. `uri-type` is any of the uri types specified in config, e.g., `:post-root-uri`."
   ([file-name params]
    (page-uri file-name nil params))
-  ([file-name uri-type {:keys [blog-prefix clean-urls?] :as params}]
+  ([file-name uri-type {:keys [blog-prefix clean-urls] :as params}]
    (let [page-uri (get params uri-type)
-         uri-end  (if clean-urls? (string/replace file-name #"(index)?\.html" "") file-name)]
+         uri-end  (condp = clean-urls
+                    :trailing-slash (string/replace file-name #"(index)?\.html" "/")
+                    :no-trailing-slash (string/replace file-name #"(index)?\.html" "")
+                    :dirty file-name)]
      (cryogen-io/path "/" blog-prefix page-uri uri-end))))
 
 (defn read-page-meta
@@ -224,13 +227,20 @@
     (map (partial sort-by :page-index) [navbar-pages sidebar-pages])))
 
 (defn write-html
-  "When `clean-urls?` is set, appends `.html` before spit; otherwise just spits."
-  [file-uri {:keys [clean-urls?]} data]
-  (if clean-urls?
-    (cryogen-io/create-file
-      (if (= "/" file-uri) "index.html" (str file-uri ".html"))
-      data)
-    (cryogen-io/create-file file-uri data)))
+  "When `clean-urls` is set to:
+  - `:trailing-slash` appends `/index.html`.
+  - `:no-trailing-slash` appends `.html`.
+  - `:dirty` just spits."
+  [file-uri {:keys [blog-prefix clean-urls]} data]
+  (condp = clean-urls
+    :trailing-slash (cryogen-io/create-file-recursive
+                     (cryogen-io/path file-uri "index.html") data)
+    :no-trailing-slash (cryogen-io/create-file
+                        (if (or (= blog-prefix file-uri) (= "/" file-uri))
+                          (cryogen-io/path file-uri "index.html")
+                          (str file-uri ".html"))
+                        data)
+    :dirty (cryogen-io/create-file file-uri data)))
 
 (defn- print-debug-info [data]
   (println "DEBUG:")
