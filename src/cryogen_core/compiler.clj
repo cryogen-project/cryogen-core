@@ -82,7 +82,8 @@
       (s/validate schemas/MetaData metadata)
       metadata)
     (catch Exception e
-      (throw e))))
+      (throw (ex-info (ex-message e)
+                      (assoc (ex-data e) :page page))))))
 
 (defn page-content
   "Returns a map with the given page's file-name, metadata and content parsed from
