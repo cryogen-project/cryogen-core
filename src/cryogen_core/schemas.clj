@@ -10,15 +10,15 @@
    (s/optional-key :css-theme) s/Str})
 
 (def MetaData
-  {:layout                      s/Keyword
+  {(s/optional-key :layout)     s/Keyword
    :title                       s/Str
    (s/optional-key :date)       s/Str
    (s/optional-key :author)     s/Str
    (s/optional-key :tags)       [s/Str]
    (s/optional-key :toc)        (s/conditional keyword? (s/enum :ol :ul)
-                                               :else    s/Bool)
+                                               :else s/Bool)
    (s/optional-key :draft?)     s/Bool
-   (s/optional-key :klipse)     (s/conditional map?  Klipse
+   (s/optional-key :klipse)     (s/conditional map? Klipse
                                                :else (s/pred true?))
    (s/optional-key :home?)      s/Bool
    (s/optional-key :page-index) s/Int
