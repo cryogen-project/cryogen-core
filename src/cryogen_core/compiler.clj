@@ -115,7 +115,7 @@
   [page config markup]
   (let [{:keys [file-name page-meta content]} (page-content page config markup)]
     (merge
-      (merge-meta-and-content file-name page-meta content)
+      (merge-meta-and-content file-name (update page-meta :layout #(or % :page)) content)
       {:uri           (page-uri file-name :page-root-uri config)
        :page-index    (:page-index page-meta)
        :klipse/global (:klipse config)
@@ -126,7 +126,7 @@
   [page config markup]
   (let [{:keys [file-name page-meta content]} (page-content page config markup)]
     (merge
-      (merge-meta-and-content file-name page-meta content)
+      (merge-meta-and-content file-name (update page-meta :layout #(or % :post)) content)
       (let [date            (if (:date page-meta)
                               (.parse (java.text.SimpleDateFormat. (:post-date-format config)) (:date page-meta))
                               (parse-post-date file-name (:post-date-format config)))
