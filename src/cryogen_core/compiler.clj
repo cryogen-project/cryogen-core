@@ -115,7 +115,7 @@
   [page config markup]
   (let [{:keys [file-name page-meta content]} (page-content page config markup)]
     (merge
-      (merge-meta-and-content file-name page-meta content)
+      (merge-meta-and-content file-name (update page-meta :layout #(or % :page)) content)
       {:uri           (page-uri file-name :page-root-uri config)
        :page-index    (:page-index page-meta)
        :klipse/global (:klipse config)
@@ -126,7 +126,7 @@
   [page config markup]
   (let [{:keys [file-name page-meta content]} (page-content page config markup)]
     (merge
-      (merge-meta-and-content file-name page-meta content)
+      (merge-meta-and-content file-name (update page-meta :layout #(or % :post)) content)
       (let [date            (if (:date page-meta)
                               (.parse (java.text.SimpleDateFormat. (:post-date-format config)) (:date page-meta))
                               (parse-post-date file-name (:post-date-format config)))
@@ -323,19 +323,20 @@
   [content]
   (when-let [index (string/index-of content "<!--more-->")]
     (->> (subs content 0 index)
-         enlive/html-snippet
-         enlive/emit*
-         (apply str))))
+         enlive/html-snippet)))
+
+(defn preview-dom [blocks-per-preview content]
+  (or (content-until-more-marker content)
+      (->> (enlive/html-snippet content)
+           (take blocks-per-preview))))
 
 (defn create-preview
   "Creates a single post preview"
   [blocks-per-preview post]
   (update post :content
-          #(or (content-until-more-marker %)
-               (->> (enlive/html-snippet %)
-                    (take blocks-per-preview)
-                    enlive/emit*
-                    (apply str)))))
+          #(->> (preview-dom blocks-per-preview %)
+                enlive/emit*
+                (apply str))))
 
 (defn create-previews
   "Returns a sequence of vectors, each containing a set of post previews"
@@ -380,6 +381,22 @@
                                :posts           posts
                                :prev-uri        prev
                                :next-uri        next})))))))
+
+(defn add-description
+  "Add plain text `:description` to the page/post for use in meta description etc."
+  [{:keys [blocks-per-preview description-include-elements]
+    :or   {description-include-elements #{:p :h1 :h2 :h3 :h4 :h5 :h6}}}
+   page]
+  (update
+    page :description
+    #(cond
+       (= false %) nil  ;; if set via page meta to false, do not set
+       %           %    ;; if set via page meta, use it
+       :else       (->> (enlive/select
+                          (preview-dom blocks-per-preview (:content page))
+                          [(set description-include-elements)])
+                        (map enlive/text)
+                        (apply str)))))
 
 (defn compile-index
   "Compiles the index page into html and spits it out into the public folder"
@@ -473,11 +490,16 @@
          overrides' (dissoc overrides :extend-params-fn)
          {:keys [^String site-url blog-prefix rss-name recent-posts keep-files ignored-files previews? author-root-uri theme]
           :as   config} (resolve-config overrides')
-         posts        (map klipse/klipsify (add-prev-next (read-posts config)))
+         posts         (->> (read-posts config)
+                            (add-prev-next)
+                            (map klipse/klipsify)
+                            (map (partial add-description config)))
          posts-by-tag (group-by-tags posts)
          posts        (tag-posts posts config)
          latest-posts (->> posts (take recent-posts) vec)
-         pages        (map klipse/klipsify (read-pages config))
+         pages        (->> (read-pages config)
+                           (map klipse/klipsify)
+                           (map (partial add-description config)))
          home-page    (->> pages
                            (filter #(boolean (:home? %)))
                            (first))
