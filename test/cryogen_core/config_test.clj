@@ -22,7 +22,6 @@
    :sass-src             []
    :sass-dest            nil
    :sass-path            "sass"
-   :compass-path         "compass"
    :theme                "blue"
    :resources            ["img"]
    :keep-files           [".git"]

@@ -14,14 +14,6 @@
   [sass-path]
   (zero? (:exit (sh sass-path "--version"))))
 
-(defn compass-installed?
-  "Checks for the installation of Compass."
-  [compass-path]
-  (try
-    (zero? (:exit (sh compass-path "--version")))
-    (catch java.io.IOException _
-      false)))
-
 (defn find-sass-files
   "Given a directory, gets files, filtered to those having scss or sass
    extension. Ignores files matching any ignored regexps."
@@ -36,13 +28,11 @@
   "Given a sass directory (or file), output the resulting CSS in the
    same dir. All error handling is done by sh / launching the sass
    command."
-  [{:keys [sass-dir sass-path compass-path]}]
+  [{:keys [sass-dir sass-path]}]
   (shell/with-sh-dir
     "."
     (let [sass-argument (str sass-dir ":" sass-dir)]
-      (if (compass-installed? compass-path)
-        (sh sass-path "--compass" "--update" sass-argument)
-        (sh sass-path "--update" sass-argument)))))
+      (sh sass-path "--update" sass-argument))))
 
 (defn compile-sass->css!
   "Given a directory or directories in sass-src, looks for all Sass files and compiles them.

@@ -29,7 +29,6 @@
                      (update-in [:archive-group-format] (fnil identity "yyyy MMMM"))
                      (update-in [:sass-src] (fnil identity ["css"]))
                      (update-in [:sass-path] (fnil identity "sass"))
-                     (update-in [:compass-path] (fnil identity "compass"))
                      (update-in [:posts-per-page] (fnil identity 5))
                      (update-in [:blocks-per-preview] (fnil identity 2))
                      (assoc :page-root-uri (root-uri :page-root-uri config)
