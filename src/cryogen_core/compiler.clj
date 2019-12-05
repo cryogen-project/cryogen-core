@@ -485,8 +485,11 @@
    (when-not (empty? overrides)
      (println (yellow "overriding config.edn with:"))
      (pprint overrides))
-   (let [{:keys [^String site-url blog-prefix rss-name recent-posts keep-files ignored-files previews? author-root-uri theme]
-          :as   config} (resolve-config overrides)
+   (let [extend-params (or (:extend-params-fn overrides)
+                           (fn [params _] params))
+         overrides' (dissoc overrides :extend-params-fn)
+         {:keys [^String site-url blog-prefix rss-name recent-posts keep-files ignored-files previews? author-root-uri theme]
+          :as   config} (resolve-config overrides')
          posts         (->> (read-posts config)
                             (add-prev-next)
                             (map klipse/klipsify)
@@ -505,7 +508,7 @@
                            (add-prev-next))
          [navbar-pages
           sidebar-pages] (group-pages other-pages)
-         params       (merge
+         params0      (merge
                        config
                        {:today         (java.util.Date.)
                         :title         (:site-title config)
@@ -521,7 +524,14 @@
                         :index-uri     (page-uri "index.html" config)
                         :tags-uri      (page-uri "tags.html" config)
                         :rss-uri       (cryogen-io/path "/" blog-prefix rss-name)
-                        :site-url      (if (.endsWith site-url "/") (.substring site-url 0 (dec (count site-url))) site-url)})]
+                        :site-url      (if (.endsWith site-url "/") (.substring site-url 0 (dec (count site-url))) site-url)})
+         params       (extend-params
+                        params0
+                        {:posts posts
+                         :pages pages
+                         :posts-by-tag posts-by-tag
+                         :navbar-pages navbar-pages
+                         :sidebar-pages sidebar-pages})]
 
      (set-custom-resource-path! (cryogen-io/path "file:themes" theme))
      (cryogen-io/set-public-path! (:public-dest config))
