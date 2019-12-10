@@ -69,37 +69,39 @@
 (defn- build-toc
   "Given the root of a toc tree and either :ol or :ul,
   generate the table of contents and return it as a hiccup tree."
-  [toc-tree list-open & {:keys [outer-list?] :or {outer-list? true}}]
+  [toc-tree list-type toc-class & [{:keys [outer-list?] :or {outer-list? true}}]]
   (let [{:keys [children], {:keys [anchor text]} :value} toc-tree
         li (toc-entry anchor text)]
     (if (seq children)
       ;; Create hiccup sequence of :ol/:ul tag and sequence of :li tags
-      (list li [list-open
+      (list li [list-type
                 (when outer-list?
-                  {:class "content"})
-                (map #(build-toc % list-open :outer-list? false) children)])
+                  {:class toc-class})
+                (map #(build-toc % list-type toc-class {:outer-list? false}) children)])
       li))) ; Or just return the naked :li tag
 
 (defn generate-toc*
   "The inner part of generate-toc. Takes maps of enlive-style html elements
   and returns hiccup."
-  [elements list-type]
+  [elements list-type toc-class]
   (-> elements
       (get-headings)
       (build-toc-tree)
-      (build-toc list-type)))
+      (build-toc list-type toc-class)))
 
 (defn generate-toc
   "Reads an HTML string and parses it for headers, then returns a list of links
   to them.
 
-  Optionally, a map of :list-type can be provided with value :ul, :ol, or true.
-  :ol and true will result in an ordered list being generated for the table of
-  contents, while :ul will result in an unordered list. The default is an
-  ordered list."
-  [html & {:keys [list-type] :or {list-type :ol}}]
+  A map of :list-type and :toc-class should be provided.
+   :list-type can be one of :ul, :ol, or true.
+     :ol and true will result in an ordered list being generated for the table of
+     contents, while :ul will result in an unordered list. The default is an
+     ordered list.
+   :toc-class will be added to the top-level element (ie. ul.toc-class or ol.toc-class)"
+  [html {:keys [list-type toc-class]}]
   (let [list-type (if (true? list-type) :ol list-type)]
     (-> html
         (enlive/html-snippet)
-        (generate-toc* list-type)
+        (generate-toc* list-type toc-class)
         (hiccup/html))))

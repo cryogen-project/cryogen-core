@@ -100,45 +100,56 @@
        :page-meta page-meta
        :content   content})))
 
+(defn add-toc
+  "Adds :toc to article, if necessary"
+  [{:keys [content toc toc-class] :as article} config]
+  (update
+    article
+    :toc
+    #(if %
+       (toc/generate-toc content
+                         {:list-type toc
+                          :toc-class (or toc-class (:toc-class config) "toc")}))))
+
 (defn merge-meta-and-content
-  "Merges the page metadata and content maps, adding :toc if necessary."
+  "Merges the page metadata and content maps"
   [file-name page-meta content]
   (merge
     (update-in page-meta [:layout] #(str (name %) ".html"))
     {:file-name file-name
-     :content   content
-     :toc       (if-let [toc (:toc page-meta)]
-                  (toc/generate-toc content :list-type toc))}))
+     :content   content}))
 
 (defn parse-page
   "Parses a page/post and returns a map of the content, uri, date etc."
   [page config markup]
   (let [{:keys [file-name page-meta content]} (page-content page config markup)]
-    (merge
-      (merge-meta-and-content file-name (update page-meta :layout #(or % :page)) content)
-      {:uri           (page-uri file-name :page-root-uri config)
-       :page-index    (:page-index page-meta)
-       :klipse/global (:klipse config)
-       :klipse/local  (:klipse page-meta)})))
+    (-> (merge-meta-and-content file-name (update page-meta :layout #(or % :page)) content)
+        (merge
+          {:uri           (page-uri file-name :page-root-uri config)
+           :page-index    (:page-index page-meta)
+           :klipse/global (:klipse config)
+           :klipse/local  (:klipse page-meta)})
+        (add-toc config))))
 
 (defn parse-post
   "Return a map with the given post's information."
   [page config markup]
   (let [{:keys [file-name page-meta content]} (page-content page config markup)]
-    (merge
-      (merge-meta-and-content file-name (update page-meta :layout #(or % :post)) content)
-      (let [date            (if (:date page-meta)
-                              (.parse (java.text.SimpleDateFormat. (:post-date-format config)) (:date page-meta))
-                              (parse-post-date file-name (:post-date-format config)))
-            archive-fmt     (java.text.SimpleDateFormat. (:archive-group-format config) (Locale/getDefault))
-            formatted-group (.format archive-fmt date)]
-        {:date                    date
-         :formatted-archive-group formatted-group
-         :parsed-archive-group    (.parse archive-fmt formatted-group)
-         :uri                     (page-uri file-name :post-root-uri config)
-         :tags                    (set (:tags page-meta))
-         :klipse/global           (:klipse config)
-         :klipse/local            (:klipse page-meta)}))))
+    (let [date            (if (:date page-meta)
+                            (.parse (java.text.SimpleDateFormat. (:post-date-format config)) (:date page-meta))
+                            (parse-post-date file-name (:post-date-format config)))
+          archive-fmt     (java.text.SimpleDateFormat. (:archive-group-format config) (Locale/getDefault))
+          formatted-group (.format archive-fmt date)]
+      (-> (merge-meta-and-content file-name (update page-meta :layout #(or % :post)) content)
+          (merge
+            {:date                    date
+             :formatted-archive-group formatted-group
+             :parsed-archive-group    (.parse archive-fmt formatted-group)
+             :uri                     (page-uri file-name :post-root-uri config)
+             :tags                    (set (:tags page-meta))
+             :klipse/global           (:klipse config)
+             :klipse/local            (:klipse page-meta)})
+          (add-toc config)))))
 
 (defn read-posts
   "Returns a sequence of maps representing the data from markdown files of posts.

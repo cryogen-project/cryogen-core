@@ -32,17 +32,17 @@
 ;   * h3
 ; * h1
 (deftest test-generate-toc*
-  (is (util/hic= [:ol.content [:li [:a {:href "#test"} "Test"]]]
+  (is (util/hic= [:ol.toc [:li [:a {:href "#test"} "Test"]]]
                  (-> [:div [:h2 {:id "test"} "Test"]]
                      (enlive/html)
-                     (generate-toc* :ol))))
+                     (generate-toc* :ol "toc"))))
 
   (is (-> [:div [:p "This is not a header"]]
           (enlive/html)
-          (generate-toc* :ol)
+          (generate-toc* :ol "toc")
           (nil?)))
 
-  (is (util/hic= [:ol.content
+  (is (util/hic= [:ol.toc
                   [:li [:a {:href "#starting_low"} "Starting Low"]]
                   [:li [:a {:href "#finishing_high"} "Finishing High"]]]
                  (-> [:div
@@ -51,10 +51,10 @@
                       [:h1 {:id "finishing_high"}
                        "Finishing High"]]
                      (enlive/html)
-                     (generate-toc* :ol)))
+                     (generate-toc* :ol "toc")))
       "No outer header should be less indented than the first header tag.")
 
-  (is (util/hic= [:ul.content
+  (is (util/hic= [:ul.toc
                   [:li [:a {:href "#starting_low"} "Starting Low"]]
                   [:ul
                    [:li [:a {:href "#jumping_in"} "Jumping Right In"]]
@@ -70,34 +70,32 @@
                       [:h2 {:id "to_the_top"}
                        "To the top"]]
                      (enlive/html)
-                     (generate-toc* :ul)))
+                     (generate-toc* :ul "toc")))
       (str "Inner headers can be more indented, "
            "but outer headers cannot be less indented "
            "than the original header."))
 
-  (is (util/hic= [:ol.content
+  (is (util/hic= [:ol.toc
                   [:li [:a {:href "#foo_<code>bar</code>"} "foo " [:code "bar"]]]]
                  (-> [:div [:h2 {:id "foo_<code>bar</code>"} "foo " [:code "bar"]]]
                      (enlive/html)
-                     (generate-toc* :ol)))
+                     (generate-toc* :ol "toc")))
       "Supports code tags in headings.")
 
-  (is (util/hic= [:ol.content
+  (is (util/hic= [:ol.toc
                   [:li [:a {:href "#foo_<strong>bar_<i>baz</i></strong>"}
                         "foo " [:strong "bar " [:i "baz"]]]]]
                  (-> [:div [:h2 {:id "foo_<strong>bar_<i>baz</i></strong>"}
                             "foo " [:strong "bar " [:i "baz"]]]]
                      (enlive/html)
-                     (generate-toc* :ol)))
+                     (generate-toc* :ol "toc")))
       "Supports nested tags in headings."))
 
 (deftest test-generate-toc
   (let [htmlString "<div><h2 id=\"test\">Test</h2></div>"]
-    (is (= "<ol class=\"content\"><li><a href=\"#test\">Test</a></li></ol>"
-           (generate-toc htmlString)))
-    (is (= "<ol class=\"content\"><li><a href=\"#test\">Test</a></li></ol>"
-           (generate-toc htmlString :list-type true)))
-    (is (= "<ol class=\"content\"><li><a href=\"#test\">Test</a></li></ol>"
-           (generate-toc htmlString :list-type :ol)))
-    (is (= "<ul class=\"content\"><li><a href=\"#test\">Test</a></li></ul>"
-           (generate-toc htmlString :list-type :ul)))))
+    (is (= "<ol class=\"toc\"><li><a href=\"#test\">Test</a></li></ol>"
+           (generate-toc htmlString {:list-type true :toc-class "toc"})))
+    (is (= "<ol class=\"toc\"><li><a href=\"#test\">Test</a></li></ol>"
+           (generate-toc htmlString {:list-type :ol :toc-class "toc"})))
+    (is (= "<ul class=\"custom-toc\"><li><a href=\"#test\">Test</a></li></ul>"
+           (generate-toc htmlString {:list-type :ul :toc-class "custom-toc"})))))
