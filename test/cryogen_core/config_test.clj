@@ -3,39 +3,40 @@
             [cryogen-core.config :refer :all]))
 
 (def default-config
-  {:site-title           "My Awesome Blog"
-   :author               "Bob Bobbert"
-   :description          "This blog is awesome"
-   :site-url             "http://blogawesome.com/"
-   :post-root            "posts"
-   :page-root            "pages"
-   :post-root-uri        "posts-output"
-   :page-root-uri        "pages-output"
-   :tag-root-uri         "tags-output"
-   :author-root-uri      "authors-output"
-   :blog-prefix          "/blog"
-   :rss-name             "feed.xml"
-   :rss-filters          ["cryogen"]
-   :recent-posts         3
-   :post-date-format     "yyyy-MM-dd"
-   :archive-group-format "yyyy MMMM"
-   :sass-src             []
-   :sass-dest            nil
-   :sass-path            "sass"
-   :theme                "blue"
-   :resources            ["img"]
-   :keep-files           [".git"]
-   :disqus?              false
-   :disqus-shortname     ""
-   :ignored-files        [#"\.#.*" #".*\.swp$"]
-   :posts-per-page       5
-   :blocks-per-preview   2
-   :previews?            false
-   :clean-urls           :trailing-slash
-   :collapse-subdirs?    false
-   :hide-future-posts?   true
-   :klipse               {}
-   :debug?               false})
+  {:site-title                   "My Awesome Blog"
+   :author                       "Bob Bobbert"
+   :description                  "This blog is awesome"
+   :site-url                     "http://blogawesome.com/"
+   :post-root                    "posts"
+   :page-root                    "pages"
+   :post-root-uri                "posts-output"
+   :page-root-uri                "pages-output"
+   :tag-root-uri                 "tags-output"
+   :author-root-uri              "authors-output"
+   :public-dest                  "public"
+   :blog-prefix                  "/blog"
+   :rss-name                     "feed.xml"
+   :rss-filters                  ["cryogen"]
+   :recent-posts                 3
+   :post-date-format             "yyyy-MM-dd"
+   :archive-group-format         "yyyy MMMM"
+   :sass-src                     []
+   :sass-path                    "sass"
+   :theme                        "blue"
+   :resources                    ["img"]
+   :keep-files                   [".git"]
+   :disqus?                      false
+   :disqus-shortname             ""
+   :ignored-files                [#"\.#.*" #".*\.swp$"]
+   :previews?                    false
+   :posts-per-page               5
+   :blocks-per-preview           2
+   :clean-urls                   :trailing-slash
+   :collapse-subdirs?            false
+   :hide-future-posts?           true
+   :klipse                       {}
+   :description-include-elements #{:p :h1 :h2 :h3 :h4 :h5 :h6}
+   :debug?                       false})
 
 (deftest test-config-parsing
   (testing "Parsing configuration file"
