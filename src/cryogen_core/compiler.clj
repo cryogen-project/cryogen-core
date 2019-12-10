@@ -490,22 +490,22 @@
   ([]
    (compile-assets {}))
   ([{:keys [extend-params-fn update-article-fn]
-     :or {extend-params-fn (fn [params _] params)
-          update-article-fn identity}
-     :as overrides-and-hooks}]
+     :or   {extend-params-fn  (fn [params _] params)
+            update-article-fn (fn [article _] article)}
+     :as   overrides-and-hooks}]
    (println (green "compiling assets..."))
    (when-not (empty? overrides-and-hooks)
      (println (yellow "overriding config.edn with:"))
      (pprint overrides-and-hooks))
-   (let [overrides     (dissoc overrides-and-hooks :extend-params-fn, :update-article-fn)
+   (let [overrides    (dissoc overrides-and-hooks :extend-params-fn :update-article-fn)
          {:keys [^String site-url blog-prefix rss-name recent-posts keep-files ignored-files previews? author-root-uri theme]
           :as   config} (resolve-config overrides)
-         posts         (->> (read-posts config)
-                            (add-prev-next)
-                            (map klipse/klipsify)
-                            (map (partial add-description config))
-                            (map #(update-article-fn % config))
-                            (remove nil?))
+         posts        (->> (read-posts config)
+                           (add-prev-next)
+                           (map klipse/klipsify)
+                           (map (partial add-description config))
+                           (map #(update-article-fn % config))
+                           (remove nil?))
          posts-by-tag (group-by-tags posts)
          posts        (tag-posts posts config)
          latest-posts (->> posts (take recent-posts) vec)
@@ -592,12 +592,3 @@
                 (instance? clojure.lang.ExceptionInfo e))
           (println (red "Error:") (yellow (.getMessage e)))
           (write-exception e)))))))
-
-(comment
-  (def *config (resolve-config {}))
-
-  ;; Build and copy only styles & theme
-  (do
-    (sass/compile-sass->css! *config)
-    (cryogen-io/copy-resources-from-theme *config))
-  nil)

@@ -2,6 +2,7 @@
   (:require [clojure.java.io :as io]
             [clojure.test :refer :all]
             [me.raynes.fs :as fs]
+            [net.cgrand.enlive-html :as enlive]
             [cryogen-core.compiler :refer :all]
             [cryogen-core.markup :as m])
   (:import [java.io File]))
@@ -15,13 +16,15 @@
   </div>
 </div>")))
   ; text with more marker, return text before more marker with closing tags.
-  (is (= (content-until-more-marker "<div id='post'>
+  (is (= (->> (content-until-more-marker "<div id='post'>
   <div class='post-content'>
     this post has more marker
 <!--more-->
 and more content.
   </div>
 </div>")
+              enlive/emit*
+              (apply str))
          "<div id=\"post\">
   <div class=\"post-content\">
     this post has more marker
@@ -57,21 +60,21 @@ and more content.
   (let [mu (markdown)]
     (testing "Finds no files"
       (is (empty? (check-for-posts mu))
-      (is (empty? (check-for-pages mu))))
+          (is (empty? (check-for-pages mu))))
 
-    (let [dir->file
-          [[check-for-posts "content/md/posts" "post.md"]
-           [check-for-posts "content/posts" "post.md"]
-           [check-for-pages "content/md/pages" "page.md"]
-           [check-for-pages "content/pages" "page.md"]]]
-      (doseq [[check-fn dir file] dir->file]
-        (testing (str "Finds files in " dir)
-          (create-entry dir file)
-          (let [entries (check-fn mu)]
-            (is (= 1 (count entries)))
-            (is (= (.getAbsolutePath (File. (str dir File/separator file)))
-                   (.getAbsolutePath (first entries)))))
-          (reset-resources)))))))
+      (let [dir->file
+            [[check-for-posts "content/md/posts" "post.md"]
+             [check-for-posts "content/posts" "post.md"]
+             [check-for-pages "content/md/pages" "page.md"]
+             [check-for-pages "content/pages" "page.md"]]]
+        (doseq [[check-fn dir file] dir->file]
+          (testing (str "Finds files in " dir)
+            (create-entry dir file)
+            (let [entries (check-fn mu)]
+              (is (= 1 (count entries)))
+              (is (= (.getAbsolutePath (File. (str dir File/separator file)))
+                     (.getAbsolutePath (first entries)))))
+            (reset-resources)))))))
 
 (defmacro with-markup [mu & body]
   `(do
@@ -93,10 +96,10 @@ and more content.
       (create-entry (str "content/" path)
                     (str "entry" (m/ext mu)))))
   (with-markup mu
-    (copy-resources-from-markup-folders
-      {:post-root posts-root
-       :page-root pages-root
-       :blog-prefix "/blog"}))
+               (copy-resources-from-markup-folders
+                 {:post-root   posts-root
+                  :page-root   pages-root
+                  :blog-prefix "/blog"}))
   (doseq [dir dirs]
     (is (.isDirectory (File. (str "public/blog/" dir))))))
 
@@ -104,8 +107,8 @@ and more content.
   (reset-resources)
   (testing "No pages or posts nothing to copy"
     (copy-resources-from-markup-folders
-      {:post-root "pages"
-       :page-root "posts"
+      {:post-root   "pages"
+       :page-root   "posts"
        :blog-prefix "/blog"})
     (is (not (.isDirectory (File. (str "public/blog/pages")))))
     (is (not (.isDirectory (File. (str "public/blog/posts"))))))
@@ -126,7 +129,7 @@ and more content.
 
 (deftest test-metadata-parsing
   (testing "Parsing page/post configuration"
-    (let [valid-metadata (reader-string "{:layout :post :title \"Hello World\"}")
+    (let [valid-metadata   (reader-string "{:layout :post :title \"Hello World\"}")
           invalid-metadata (reader-string "{:layout \"post\" :title \"Hello World\"}")]
       (is (read-page-meta nil valid-metadata))
       (is (thrown? Exception (read-page-meta nil invalid-metadata))))))
