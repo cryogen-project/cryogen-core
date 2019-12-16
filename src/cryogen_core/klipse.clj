@@ -38,7 +38,6 @@
   all the classes on all code blocks."
   [html]
   (->> html
-       enlive/html-snippet
        (util/filter-html-elems (comp #{:code} :tag))
        (keep (comp :class :attrs))
        (mapcat #(string/split % #" "))))
@@ -52,14 +51,15 @@
   (filter #(string/starts-with? % ".") (vals settings)))
 
 (defn tag-nohighlight
-  "Takes html as a string and a coll of class-selectors and adds
-   nohighlight to all code blocks that includes one of them."
+  "Takes html as an Enlive DOM and a coll of class-selectors and adds
+   the class `nohighlight` to all code blocks that includes one of them
+   so that the default code highlighter ignores them."
   [html settings]
   (letfn [(tag [h clas]
-            (enlive/sniptest h
-                             [(keyword (str "code" clas))]
-                             (fn [x]
-                               (update-in x [:attrs :class] #(str % " nohighlight")))))]
+            (enlive/transform h
+                              [(keyword (str "code" clas))]
+                              (fn [x]
+                                (update-in x [:attrs :class] #(str % " nohighlight")))))]
     (reduce tag html (eval-classes settings))))
 
 (def defaults
@@ -143,10 +143,10 @@
 
 (defn klipsify
   "Klipsifies (or not) a post depending on the global and local klipse configs."
-  [{:keys [klipse/global klipse/local content] :as post}]
+  [{:keys [klipse/global klipse/local content-dom] :as post}]
   (if-not (klipsify? global local)
     (dissoc post :klipse)
-    (let [cfg (-> (merge-configs global local) (infer-clojure-eval content))]
+    (let [cfg (-> (merge-configs global local) (infer-clojure-eval content-dom))]
       (-> post
           (assoc :klipse (emit cfg))
-          (update :content tag-nohighlight (:settings cfg))))))
+          (update :content-dom tag-nohighlight (:settings cfg))))))
