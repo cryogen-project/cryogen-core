@@ -1,5 +1,6 @@
 (ns cryogen-core.config
   (:require [clojure.string :as string]
+            [clojure.set :as set]
             [schema.core :as s]
             [cryogen-core.schemas :as schemas]
             [cryogen-core.io :as cryogen-io]))
@@ -31,16 +32,19 @@
                      (update-in [:sass-path] (fnil identity "sass"))
                      (update-in [:posts-per-page] (fnil identity 5))
                      (update-in [:blocks-per-preview] (fnil identity 2))
+                     (update-in [:copy-html] (fnil identity ["404"]))
                      (assoc :page-root-uri (root-uri :page-root-uri config)
                             :post-root-uri (root-uri :post-root-uri config)))
           check-overlap (fn [dirs]
-                          (some #(subpath? % (:public-dest config)) dirs))]
-      
-      (if (or (= (string/trim (:public-dest config)) "")
-              (string/starts-with? (:public-dest config) ".")
-              (check-overlap ["content" "themes" "src" "target"]))
-        (throw (new Exception "Dangerous :public-dest value. The folder will be deleted each time the content is rendered. Specify a sub-folder that doesn't overlap with the default folders or your resource folders."))
-        config))
+                          (some #(subpath? % (:public-dest config)) dirs))
+          check-html (fn [& htmls]
+                       (apply set/intersection (map set htmls)))]
+      (cond
+        (or (= (string/trim (:public-dest config)) "")
+            (string/starts-with? (:public-dest config) ".")
+            (check-overlap ["content" "themes" "src" "target"])) (throw (new Exception "Dangerous :public-dest value. The folder will be deleted each time the content is rendered. Specify a sub-folder that doesn't overlap with the default folders or your resource folders."))
+        (seq (check-html (:copy-html config) (:compile-html config))) (throw (new Exception ":copy-html and :compile-html contain overlapping values. We can't compile an html file and copy it as-is at the same time. Please modify those settings to contain distinct values"))
+        :else config))
     (catch Exception e (throw e))))
 
 (defn deep-merge
