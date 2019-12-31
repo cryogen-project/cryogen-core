@@ -99,9 +99,8 @@
      contents, while :ul will result in an unordered list. The default is an
      ordered list.
    :toc-class will be added to the top-level element (ie. ul.toc-class or ol.toc-class)"
-  [html {:keys [list-type toc-class]}]
+  [html-dom {:keys [list-type toc-class]}]
   (let [list-type (if (true? list-type) :ol list-type)]
-    (-> html
-        (enlive/html-snippet)
+    (-> html-dom
         (generate-toc* list-type toc-class)
         (hiccup/html))))

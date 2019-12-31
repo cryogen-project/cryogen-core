@@ -23,3 +23,11 @@
             (enlive->hiccup {:tag :div,
                              :attrs {:class "foo"},
                              :content '({:tag :p :content "bar"})}))))
+
+(deftest enlive->html-text-test
+  (is (= (enlive->html-text (enlive/html-snippet "<p>hi <b>there</b>!</p>"))
+         "<p>hi <b>there</b>!</p>")))
+
+(deftest enlive->plain-text-test
+  (is (= (enlive->plain-text (enlive/html-snippet "<h1>Greeting:</h1><p>hi <b>there</b>!</p>"))
+         "Greeting:hi there!")))

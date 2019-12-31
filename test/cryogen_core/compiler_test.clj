@@ -10,25 +10,23 @@
 ; Test that the content-until-more-marker return nil or correct html text.
 (deftest test-content-until-more-marker
   ; text without more marker, return nil
-  (is (nil? (content-until-more-marker "<div id=\"post\">
+  (is (nil? (content-until-more-marker (enlive/html-snippet "<div id=\"post\">
   <div class=\"post-content\">
     this post does not have more marker
   </div>
-</div>")))
+</div>"))))
   ; text with more marker, return text before more marker with closing tags.
-  (is (= (->> (content-until-more-marker "<div id='post'>
+  (is (= (->> (content-until-more-marker (enlive/html-snippet "<div id='post'>
   <div class='post-content'>
     this post has more marker
 <!--more-->
 and more content.
   </div>
-</div>")
-              enlive/emit*
-              (apply str))
-         "<div id=\"post\">
+</div>")))
+         (enlive/html-snippet "<div id=\"post\">
   <div class=\"post-content\">
     this post has more marker
-</div></div>")))
+</div></div>"))))
 
 (defn- markdown []
   (reify m/Markup

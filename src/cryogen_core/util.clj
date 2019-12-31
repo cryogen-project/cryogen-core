@@ -1,5 +1,6 @@
 (ns cryogen-core.util
-  (:require [hiccup.core :as hiccup]))
+  (:require [net.cgrand.enlive-html :as enlive]
+            [hiccup.core :as hiccup]))
 
 (defn filter-html-elems
   "Recursively walks a sequence of enlive-style html elements depth first
@@ -26,6 +27,16 @@
         (sequential? node-or-nodes) (map enlive->hiccup node-or-nodes)
         :else (let [{:keys [tag attrs content]} node-or-nodes]
                 (conj-some [tag] (not-empty attrs) (enlive->hiccup content)))))
+
+(defn enlive->html-text [node-or-nodes]
+  (->> node-or-nodes
+       (enlive/emit*)
+       (apply str)))
+
+(defn enlive->plain-text [node-or-nodes]
+  (->> node-or-nodes
+       (enlive/texts)
+       (apply str)))
 
 (defn hic=
   "Tests whether the xs are equivalent hiccup."

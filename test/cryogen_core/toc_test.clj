@@ -92,10 +92,10 @@
       "Supports nested tags in headings."))
 
 (deftest test-generate-toc
-  (let [htmlString "<div><h2 id=\"test\">Test</h2></div>"]
+  (let [html-dom (enlive/html-snippet "<div><h2 id=\"test\">Test</h2></div>")]
     (is (= "<ol class=\"toc\"><li><a href=\"#test\">Test</a></li></ol>"
-           (generate-toc htmlString {:list-type true :toc-class "toc"})))
+           (generate-toc html-dom {:list-type true :toc-class "toc"})))
     (is (= "<ol class=\"toc\"><li><a href=\"#test\">Test</a></li></ol>"
-           (generate-toc htmlString {:list-type :ol :toc-class "toc"})))
+           (generate-toc html-dom {:list-type :ol :toc-class "toc"})))
     (is (= "<ul class=\"custom-toc\"><li><a href=\"#test\">Test</a></li></ul>"
-           (generate-toc htmlString {:list-type :ul :toc-class "custom-toc"})))))
+           (generate-toc html-dom {:list-type :ul :toc-class "custom-toc"})))))

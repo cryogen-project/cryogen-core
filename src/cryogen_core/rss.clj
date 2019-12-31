@@ -1,18 +1,19 @@
 (ns cryogen-core.rss
   (:require [clj-rss.core :as rss]
             [text-decoration.core :refer :all]
-            [cryogen-core.io :as cryogen-io])
+            [cryogen-core.io :as cryogen-io]
+            [cryogen-core.util :as cryogen-util])
   (:import java.util.Date))
 
 
 (defn posts-to-items [^String site-url posts]
   (map
-    (fn [{:keys [uri title content date enclosure author description]}]
+    (fn [{:keys [uri title content-dom date enclosure author description]}]
       (let [link (str (if (.endsWith site-url "/") (apply str (butlast site-url)) site-url) uri)]
         (merge {:guid        link
                 :link        link
                 :title       title
-                :description (or description content)
+                :description description
                 :author      author
                 :pubDate     date}
                (if enclosure {:enclosure   enclosure}))))

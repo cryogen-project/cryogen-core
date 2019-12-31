@@ -1,6 +1,7 @@
 (ns cryogen-core.klipse-test
   (:require [cryogen-core.klipse :refer :all]
-            [clojure.test :refer [deftest testing is are]]))
+            [clojure.test :refer [deftest testing is are]]
+            [net.cgrand.enlive-html :as enlive]))
 
 (deftest map-keys-test
   (is (= {"a" 1 "b" 2} (map-keys name {:a 1 :b 2}))))
@@ -17,9 +18,9 @@
 (deftest code-block-classes-test
   (is (= ["clojure" "ruby"]
          (code-block-classes
-          "<h1>stuff</h1>
+          (enlive/html-snippet "<h1>stuff</h1>
 <div class=\"not-code\"><pre><code class=\"clojure\">(def x 42)</code></pre></div>
-<pre><code class=\"ruby\">123</code><pre>"))))
+<pre><code class=\"ruby\">123</code><pre>")))))
 
 (deftest clojure-eval-classes-test
   (is (= #{"eval-cljs" "eval-reagent"}
@@ -29,14 +30,14 @@
 
 (deftest clojure-eval?-test
   (is (clojure-eval? {"selector" ".eval-cljs"}
-                     "<h1>stuff</h1>
+                     (enlive/html-snippet "<h1>stuff</h1>
 <div class=\"not-code\"><pre><code class=\"eval-cljs\">(def x 42)</code></pre></div>
-<pre><code class=\"ruby\">123</code><pre>"))
+<pre><code class=\"ruby\">123</code><pre>")))
 
   (is (not (clojure-eval? {"selector" ".eval-cljs"
                            "selector_eval_ruby" ".eval-ruby"}
-                          "<h1>stuff</h1>
-<pre><code class=\"eval-ruby\">123</code><pre>"))))
+                          (enlive/html-snippet "<h1>stuff</h1>
+<pre><code class=\"eval-ruby\">123</code><pre>")))))
 
 (deftest normalize-settings-test
   (is (= {"selector_reagent" ".reagent"

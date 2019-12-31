@@ -2,10 +2,11 @@
   (:require [clojure.java.io :as io]
             [clojure.pprint :refer [pprint]]
             [clojure.string :as string]
+            [clojure.zip :as zip]
             [io.aviso.exception :refer [write-exception]]
             [net.cgrand.enlive-html :as enlive]
             [schema.core :as s]
-            [selmer.parser :refer [cache-off! render-file]]
+            [selmer.parser :refer [cache-off!]]
             [selmer.util :refer [set-custom-resource-path!]]
             [text-decoration.core :refer :all]
             [cryogen-core.io :as cryogen-io]
@@ -16,8 +17,12 @@
             [cryogen-core.sass :as sass]
             [cryogen-core.schemas :as schemas]
             [cryogen-core.sitemap :as sitemap]
+            [cryogen-core.util :as util]
+            [cryogen-core.zip-util :as zip-util]
             [cryogen-core.toc :as toc])
-  (:import java.util.Locale))
+  (:import java.util.Locale
+           (java.io StringReader)
+           (java.util Date)))
 
 (cache-off!)
 
@@ -95,35 +100,36 @@
           page-name (if (:collapse-subdirs? config) (.getName page) (string/replace page-fwd re-root ""))
           file-name (string/replace page-name (re-pattern-from-ext (m/ext markup)) ".html")
           page-meta (read-page-meta page-name rdr)
-          content   ((m/render-fn markup) rdr config)]
+          content   ((m/render-fn markup) rdr config)
+          content-dom (enlive/html-resource (StringReader. content))]
       {:file-name file-name
        :page-meta page-meta
-       :content   content})))
+       :content-dom   content-dom})))
 
 (defn add-toc
   "Adds :toc to article, if necessary"
-  [{:keys [content toc toc-class] :as article} config]
+  [{:keys [content-dom toc toc-class] :as article} config]
   (update
     article
     :toc
     #(if %
-       (toc/generate-toc content
+       (toc/generate-toc content-dom
                          {:list-type toc
                           :toc-class (or toc-class (:toc-class config) "toc")}))))
 
 (defn merge-meta-and-content
   "Merges the page metadata and content maps"
-  [file-name page-meta content]
+  [file-name page-meta content-dom]
   (merge
     (update-in page-meta [:layout] #(str (name %) ".html"))
-    {:file-name file-name
-     :content   content}))
+    {:file-name   file-name
+     :content-dom content-dom}))
 
 (defn parse-page
   "Parses a page/post and returns a map of the content, uri, date etc."
   [page config markup]
-  (let [{:keys [file-name page-meta content]} (page-content page config markup)]
-    (-> (merge-meta-and-content file-name (update page-meta :layout #(or % :page)) content)
+  (let [{:keys [file-name page-meta content-dom]} (page-content page config markup)]
+    (-> (merge-meta-and-content file-name (update page-meta :layout #(or % :page)) content-dom)
         (merge
           {:uri           (page-uri file-name :page-root-uri config)
            :page-index    (:page-index page-meta)
@@ -134,13 +140,13 @@
 (defn parse-post
   "Return a map with the given post's information."
   [page config markup]
-  (let [{:keys [file-name page-meta content]} (page-content page config markup)]
+  (let [{:keys [file-name page-meta content-dom]} (page-content page config markup)]
     (let [date            (if (:date page-meta)
                             (.parse (java.text.SimpleDateFormat. (:post-date-format config)) (:date page-meta))
                             (parse-post-date file-name (:post-date-format config)))
-          archive-fmt     (java.text.SimpleDateFormat. (:archive-group-format config) (Locale/getDefault))
+          archive-fmt     (java.text.SimpleDateFormat. ^String (:archive-group-format config) (Locale/getDefault))
           formatted-group (.format archive-fmt date)]
-      (-> (merge-meta-and-content file-name (update page-meta :layout #(or % :post)) content)
+      (-> (merge-meta-and-content file-name (update page-meta :layout #(or % :post)) content-dom)
           (merge
             {:date                    date
              :formatted-archive-group formatted-group
@@ -164,7 +170,7 @@
              (remove #(= (:draft? %) true)))))
        (sort-by :date)
        reverse
-       (drop-while #(and (:hide-future-posts? config) (.after (:date %) (java.util.Date.))))))
+       (drop-while #(and (:hide-future-posts? config) (.after ^Date (:date %) (Date.))))))
 
 (defn read-pages
   "Returns a sequence of maps representing the data from markdown files of pages.
@@ -182,7 +188,7 @@
   "Adds the uri and title of a post to the list of posts under each of its tags"
   [tags post]
   (reduce (fn [tags tag]
-            (update-in tags [tag] (fnil conj []) (select-keys post [:uri :title :content :date :enclosure])))
+            (update-in tags [tag] (fnil conj []) (select-keys post [:uri :title :content-dom :date :enclosure :description])))
           tags
           (:tags post)))
 
@@ -227,8 +233,8 @@
   [pages]
   (map (fn [[prev target next]]
          (assoc target
-           :prev (if prev (dissoc prev :content) nil)
-           :next (if next (dissoc next :content) nil)))
+           :prev (if prev (dissoc prev :content-dom) nil)
+           :next (if next (dissoc next :content-dom) nil)))
        (partition 3 1 (flatten [nil pages nil]))))
 
 (defn group-pages
@@ -257,6 +263,26 @@
 (defn- print-debug-info [data]
   (println "DEBUG:")
   (pprint data))
+
+(defn content-dom->html [{dom :content-dom :as article}]
+  (-> article
+      (dissoc :content-dom)
+      (assoc :content (util/enlive->html-text dom))))
+
+(defn htmlize-content [params]
+  (cond
+    (contains? params :posts) (update params :posts (partial map content-dom->html))
+    (contains? params :post) (update params :post content-dom->html)
+    (contains? params :page) (update params :page content-dom->html)
+    :else params))
+
+(defn render-file
+  "Wrapper around `selmer.parser/render-file` with pre-processing"
+  [file-path params]
+  (selmer.parser/render-file
+    file-path
+    (htmlize-content params)))
+
 
 (defn compile-pages
   "Compiles all the pages into html and spits them out into the public folder"
@@ -331,23 +357,21 @@
 (defn content-until-more-marker
   "Returns the content until the <!--more--> special comment,
   closing any unclosed tags. Returns nil if there's no such comment."
-  [content]
-  (when-let [index (string/index-of content "<!--more-->")]
-    (->> (subs content 0 index)
-         enlive/html-snippet)))
+  [content-dom]
+  (some-> (zip/xml-zip {:content content-dom})
+          (zip-util/cut-tree-vertically zip-util/more-marker?)
+          (zip/node)
+          :content))
 
-(defn preview-dom [blocks-per-preview content]
-  (or (content-until-more-marker content)
-      (->> (enlive/html-snippet content)
-           (take blocks-per-preview))))
+(defn preview-dom [blocks-per-preview content-dom]
+  (or (content-until-more-marker content-dom)
+      (take blocks-per-preview content-dom)))
 
 (defn create-preview
   "Creates a single post preview"
   [blocks-per-preview post]
-  (update post :content
-          #(->> (preview-dom blocks-per-preview %)
-                enlive/emit*
-                (apply str))))
+  (update post :content-dom
+          #(preview-dom blocks-per-preview %)))
 
 (defn create-previews
   "Returns a sequence of vectors, each containing a set of post previews"
@@ -401,14 +425,12 @@
   (update
     page :description
     #(cond
-       (= false %) nil  ;; if set via page meta to false, do not set
-       %           %    ;; if set via page meta, use it
-       :else       (->> (enlive/select
-                          (preview-dom blocks-per-preview (:content page))
-                          [(set description-include-elements)])
-                        (map enlive/text)
-                        (apply str)))))
-
+       (false? %) nil  ;; if set via page meta to false, do not set
+       % %    ;; if set via page meta, use it
+       :else (->> (enlive/select
+                    (preview-dom blocks-per-preview (:content-dom page))
+                    [(set description-include-elements)])
+                  (util/enlive->plain-text)))))
 (defn compile-index
   "Compiles the index page into html and spits it out into the public folder"
   [{:keys [blog-prefix debug? home-page] :as params}]
@@ -535,7 +557,7 @@
           sidebar-pages] (group-pages other-pages)
          params0      (merge
                        config
-                       {:today         (java.util.Date.)
+                       {:today         (Date.)
                         :title         (:site-title config)
                         :active-page   "home"
                         :tags          (map (partial tag-info config) (keys posts-by-tag))
@@ -603,3 +625,18 @@
                 (instance? clojure.lang.ExceptionInfo e))
           (println (red "Error:") (yellow (.getMessage e)))
           (write-exception e)))))))
+
+(comment
+  (def *config (resolve-config {}))
+
+  ;; Build and copy only styles & theme
+  (do
+    (sass/compile-sass->css! *config)
+    (cryogen-io/copy-resources-from-theme *config))
+
+  ;; Build a single page (quicker than all)
+  (compile-assets
+    ;; Insert the prefix and suffix of the only file you _want_ to process
+    {:ignored-files [#"^(?!2019-12-12-nrepl-).*\.asc"]})
+
+  nil)
