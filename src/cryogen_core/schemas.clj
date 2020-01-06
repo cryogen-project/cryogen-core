@@ -61,4 +61,6 @@
    (s/optional-key :hide-future-posts?)   s/Bool
    (s/optional-key :klipse)               Klipse
    (s/optional-key :debug?)               s/Bool
+   (s/optional-key :copy-html)            [s/Str]
+   (s/optional-key :compile-html)         [s/Str]
    s/Keyword                              s/Any})
