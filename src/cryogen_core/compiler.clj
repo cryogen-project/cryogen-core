@@ -275,8 +275,10 @@
 (defn htmlize-content [params]
   (cond
     (contains? params :posts) (update params :posts (partial map content-dom->html))
-    (contains? params :post) (update params :post content-dom->html)
-    (contains? params :page) (update params :page content-dom->html)
+    (contains? params :post) (-> (update params :post content-dom->html)
+                                 (update-in [:post :content] selmer.parser/render params))
+    (contains? params :page) (-> (update params :page content-dom->html)
+                                 (update-in [:page :content] selmer.parser/render params))
     :else params))
 
 (defn render-file
