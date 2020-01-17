@@ -444,12 +444,11 @@
                 params
                 (render-file (str "/html/" (:layout home-page))
                              (merge params
-                                    {:active-page    "home"
-                                     :home           true
-                                     :selmer/context (cryogen-io/path "/" blog-prefix "/")
-                                     :uri            uri
-                                     :post           home-page
-                                     :page           home-page})))))
+                                    {:active-page       "home"
+                                     :home              true
+                                     :selmer/context    (cryogen-io/path "/" blog-prefix "/")
+                                     :uri               uri
+                                     (:type home-page)  home-page})))))
 
 (defn compile-archives
   "Compiles the archives page into html and spits it out into the public folder"
