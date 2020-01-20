@@ -7,7 +7,6 @@
             [net.cgrand.enlive-html :as enlive]
             [schema.core :as s]
             [selmer.parser :refer [cache-off!]]
-            [selmer.util :refer [set-custom-resource-path!]]
             [text-decoration.core :refer :all]
             [cryogen-core.io :as cryogen-io]
             [cryogen-core.config :refer [resolve-config]]
@@ -583,7 +582,8 @@
                          :navbar-pages navbar-pages
                          :sidebar-pages sidebar-pages})]
 
-     (set-custom-resource-path! (cryogen-io/path "file:themes" theme))
+     (selmer.parser/set-resource-path!
+       (.getAbsolutePath ^java.io.File (io/as-file (cryogen-io/path "themes" theme))))
      (cryogen-io/set-public-path! (:public-dest config))
 
      (cryogen-io/wipe-public-folder keep-files)
