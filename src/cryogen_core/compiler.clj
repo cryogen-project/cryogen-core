@@ -131,7 +131,8 @@
   (let [{:keys [file-name page-meta content-dom]} (page-content page config markup)]
     (-> (merge-meta-and-content file-name (update page-meta :layout #(or % :page)) content-dom)
         (merge
-          {:uri           (page-uri file-name :page-root-uri config)
+          {:type          :page
+           :uri           (page-uri file-name :page-root-uri config)
            :page-index    (:page-index page-meta)
            :klipse/global (:klipse config)
            :klipse/local  (:klipse page-meta)})
@@ -148,7 +149,8 @@
           formatted-group (.format archive-fmt date)]
       (-> (merge-meta-and-content file-name (update page-meta :layout #(or % :post)) content-dom)
           (merge
-            {:date                    date
+            {:type                    :post
+             :date                    date
              :formatted-archive-group formatted-group
              :parsed-archive-group    (.parse archive-fmt formatted-group)
              :uri                     (page-uri file-name :post-root-uri config)
@@ -442,12 +444,11 @@
                 params
                 (render-file (str "/html/" (:layout home-page))
                              (merge params
-                                    {:active-page    "home"
-                                     :home           true
-                                     :selmer/context (cryogen-io/path "/" blog-prefix "/")
-                                     :uri            uri
-                                     :post           home-page
-                                     :page           home-page})))))
+                                    {:active-page       "home"
+                                     :home              true
+                                     :selmer/context    (cryogen-io/path "/" blog-prefix "/")
+                                     :uri               uri
+                                     (:type home-page)  home-page})))))
 
 (defn compile-archives
   "Compiles the archives page into html and spits it out into the public folder"
