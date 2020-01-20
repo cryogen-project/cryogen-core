@@ -1,6 +1,8 @@
 (ns cryogen-core.util
-  (:require [net.cgrand.enlive-html :as enlive]
-            [hiccup.core :as hiccup]))
+  (:require
+    [clojure.walk :as walk]
+    [hiccup.core :as hiccup]
+    [net.cgrand.enlive-html :as enlive]))
 
 (defn filter-html-elems
   "Recursively walks a sequence of enlive-style html elements depth first
@@ -37,6 +39,17 @@
   (->> node-or-nodes
        (enlive/texts)
        (apply str)))
+
+(defn trimmed-html-snippet
+  "Creates an enlive-snippet from `html-string` then removes
+  the newline nodes"
+  [html-string]
+  (->> (enlive/html-snippet html-string)
+       (walk/postwalk
+         (fn [node]
+           (if (seq? node)
+             (remove #(and (string? %) (re-matches #"\n\h*" %)) node)
+             node)))))
 
 (defn hic=
   "Tests whether the xs are equivalent hiccup."

@@ -31,3 +31,30 @@
 (deftest enlive->plain-text-test
   (is (= (enlive->plain-text (enlive/html-snippet "<h1>Greeting:</h1><p>hi <b>there</b>!</p>"))
          "Greeting:hi there!")))
+
+(deftest trimmed-html-snippet-test
+  (is (= (trimmed-html-snippet
+           "<h1>Hello world</h1>
+            <p>Here is some content</p>
+            <p>Here is some more content</p>")
+         '({:tag :h1, :attrs nil, :content ("Hello world")}
+          {:tag :p, :attrs nil, :content ("Here is some content")}
+          {:tag :p, :attrs nil, :content ("Here is some more content")})))
+  (is (= (trimmed-html-snippet
+           "<h1>Hello world</h1><p>Here is some content</p><p>Here is some more content</p>")
+         '({:tag :h1, :attrs nil, :content ("Hello world")}
+           {:tag :p, :attrs nil, :content ("Here is some content")}
+           {:tag :p, :attrs nil, :content ("Here is some more content")})))
+  (is (= (trimmed-html-snippet
+           "<h1>Hello world</h1>
+            <p>Here is some content</p>
+            <pre><code>
+            this is
+              some block formatted
+              code
+            </code></pre>")
+         '({:tag :h1, :attrs nil, :content ("Hello world")}
+           {:tag :p, :attrs nil, :content ("Here is some content")}
+           {:tag :pre,
+            :attrs nil,
+            :content ({:tag :code, :attrs nil, :content ("\n            this is\n              some block formatted\n              code\n            ")})}))))
