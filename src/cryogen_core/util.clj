@@ -55,3 +55,8 @@
   "Tests whether the xs are equivalent hiccup."
   [x & xs]
   (apply = (map #(hiccup/html %) (cons x xs))))
+
+(defn file->url
+  "Converts a java.io.File to a java.net.URL."
+  [^java.io.File f]
+  (.. f (getAbsoluteFile) (toURI) (toURL)))
