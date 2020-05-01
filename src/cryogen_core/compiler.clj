@@ -18,10 +18,12 @@
             [cryogen-core.sitemap :as sitemap]
             [cryogen-core.util :as util]
             [cryogen-core.zip-util :as zip-util]
-            [cryogen-core.toc :as toc])
+            [cryogen-core.toc :as toc]
+            [clojure.string :as str])
   (:import java.util.Locale
            (java.io StringReader)
-           (java.util Date)))
+           (java.util Date)
+           (java.net URLEncoder)))
 
 (cache-off!)
 
@@ -224,11 +226,20 @@
               {:author author
                :posts  posts}))))
 
+(defn url-encode
+  "Url encode path element. Encodes spaces as %20 instead of +,
+  because some webservers pass + through to the file system"
+  [str]
+  (-> str
+      (URLEncoder/encode "UTF-8")
+      (str/replace "+" "%20")))
+
 (defn tag-info
   "Returns a map containing the name and uri of the specified tag"
   [config tag]
   {:name (name tag)
-   :uri  (page-uri (str (name tag) ".html") :tag-root-uri config)})
+   :file-path (page-uri (str (name tag) ".html") :tag-root-uri config)
+   :uri  (page-uri (str (url-encode (name tag)) ".html") :tag-root-uri config)})
 
 (defn add-prev-next
   "Adds a :prev and :next key to the page/post data containing the metadata of the prev/next
@@ -333,9 +344,9 @@
     (println (blue "compiling tags"))
     (cryogen-io/create-folder (cryogen-io/path "/" blog-prefix tag-root-uri))
     (doseq [[tag posts] posts-by-tag]
-      (let [{:keys [name uri]} (tag-info params tag)]
+      (let [{:keys [name uri file-path]} (tag-info params tag)]
         (println "-->" (cyan uri))
-        (write-html uri
+        (write-html file-path
                     params
                     (render-file "/html/tag.html"
                                  (merge params
