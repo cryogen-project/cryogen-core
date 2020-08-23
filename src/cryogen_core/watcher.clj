@@ -28,9 +28,19 @@
       (action)
       (reset! sums new-sums))))
 
+(defn watch-with-fallback!
+  "Wraps hawk/watch! to swap in a polling implementation if any of the native
+   OS file events interfaces fail."
+  [opts & groups]
+  (try
+    (apply hawk/watch! opts groups)
+    (catch Error e
+      (prn e "WARN - no native fs events; falling back to polling filesystem")
+      (apply hawk/watch! (assoc opts :watcher :polling) groups))))
+
 (defn start-watcher! [root ignored-files action]
   (let [sums (atom (checksums root ignored-files))
         handler (fn [ctx e]
                   (watch-assets sums root ignored-files action))]
-    (hawk/watch! [{:paths  [root]
-                   :handler handler}])))
+    (watch-with-fallback! {} [{:paths   [root]
+                               :handler handler}])))
