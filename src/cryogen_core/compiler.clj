@@ -583,7 +583,7 @@
                          :sidebar-pages sidebar-pages})]
 
      (selmer.parser/set-resource-path!
-       (.getAbsolutePath ^java.io.File (io/as-file (cryogen-io/path "themes" theme))))
+       (util/file->url (io/as-file (cryogen-io/path "themes" theme))))
      (cryogen-io/set-public-path! (:public-dest config))
 
      (cryogen-io/wipe-public-folder keep-files)
