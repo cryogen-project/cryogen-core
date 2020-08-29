@@ -273,13 +273,16 @@
       (assoc :content (util/enlive->html-text dom))))
 
 (defn htmlize-content [params]
-  (cond
-    (contains? params :posts) (update params :posts (partial map content-dom->html))
-    (contains? params :post) (-> (update params :post content-dom->html)
+  (let [parse-content? (:parse-content-with-selmer? params)]
+    (cond
+      (contains? params :posts) (update params :posts (partial map content-dom->html))
+      (contains? params :post) (cond-> (update params :post content-dom->html)
+                                 parse-content?
                                  (update-in [:post :content] selmer.parser/render params))
-    (contains? params :page) (-> (update params :page content-dom->html)
+      (contains? params :page) (cond-> (update params :page content-dom->html)
+                                 parse-content?
                                  (update-in [:page :content] selmer.parser/render params))
-    :else params))
+      :else params)))
 
 (defn render-file
   "Wrapper around `selmer.parser/render-file` with pre-processing"
