@@ -61,4 +61,5 @@
    (s/optional-key :hide-future-posts?)   s/Bool
    (s/optional-key :klipse)               Klipse
    (s/optional-key :debug?)               s/Bool
+   (s/optional-key :parse-content-with-selmer?) s/Bool
    s/Keyword                              s/Any})

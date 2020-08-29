@@ -31,6 +31,7 @@
                      (update-in [:sass-path] (fnil identity "sass"))
                      (update-in [:posts-per-page] (fnil identity 5))
                      (update-in [:blocks-per-preview] (fnil identity 2))
+                     (update-in [:parse-content-with-selmer?] (fnil identity false))
                      (assoc :page-root-uri (root-uri :page-root-uri config)
                             :post-root-uri (root-uri :post-root-uri config)))
           check-overlap (fn [dirs]
