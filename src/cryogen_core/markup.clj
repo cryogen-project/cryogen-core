@@ -5,10 +5,10 @@
 
 (defprotocol Markup
   "A markup engine comprising a dir(ectory) containing markup files,
-  an ext(ension) for finding markup file names, and a render-fn that returns
+  a set of exts (extensions) for finding markup file names, and a render-fn that returns
   a fn with the signature [java.io.Reader config] -> String (HTML)."
   (dir [this])
-  (ext [this])
+  (exts [this])             ; should return a set of extension strings
   (render-fn [this]))
 
 (defn rewrite-hrefs

@@ -42,15 +42,16 @@
 
 (defn find-assets
   "Find all assets in the given root directory (f) and the given file
-  extension (ext) ignoring any files that match the given (ignored-files).
+  extensions (exts) ignoring any files that match the given (ignored-files).
   First make sure that the root directory exists, if yes: process as normal;
-  if no, return empty vector."
-  [f ^String ext ignored-files]
+  if no, return empty vector.
+  exts is a set of strings (for multiple alternative extensions)."
+  [f exts ignored-files]
   (if-let [root (get-resource f)]
     (->> (get-resource f)
          file-seq
          (filter (ignore ignored-files))
-         (filter (fn [^java.io.File file] (-> file .getName (.endsWith ext)))))
+         (filter (fn [^java.io.File file] (some #(.endsWith (.getName file) %) exts))))
     []))
 
 (defn create-folder [folder]

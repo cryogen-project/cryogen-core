@@ -19,7 +19,7 @@
       {:tag :urlset
        :attrs {:xmlns "http://www.sitemaps.org/schemas/sitemap/0.9"}
        :content
-       (for [^java.io.File f (cryogen-io/find-assets cryogen-io/public ".html" ignored-files)]
+       (for [^java.io.File f (cryogen-io/find-assets cryogen-io/public #{".html"} ignored-files)]
          {:tag :url
           :content
           [{:tag :loc
