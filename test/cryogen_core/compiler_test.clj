@@ -31,12 +31,12 @@ and more content.
 (defn- markdown []
   (reify m/Markup
     (dir [this] "md")
-    (ext [this] ".md")))
+    (exts [this] #{".md"})))
 
 (defn- asciidoc []
   (reify m/Markup
     (dir [this] "asc")
-    (ext [this] ".asc")))
+    (exts [this] #{".asc"})))
 
 (defn- create-entry [dir file]
   (fs/mkdirs (File. dir))
@@ -87,12 +87,13 @@ and more content.
   the Markup implementation's `dir` in the path. Check that the folders exist
   in the output folder."
   [[pages-root posts-root :as dirs] mu with-dir?]
-  (doseq [dir dirs]
+  (doseq [dir dirs
+          ext (m/exts mu)]
     (let [path (if with-dir?
                  (str (m/dir mu) "/" dir)
                  dir)]
       (create-entry (str "content/" path)
-                    (str "entry" (m/ext mu)))))
+                    (str "entry" ext))))
   (with-markup mu
                (copy-resources-from-markup-folders
                  {:post-root   posts-root
