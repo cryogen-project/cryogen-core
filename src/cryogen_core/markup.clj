@@ -7,9 +7,9 @@
   "A markup engine comprising a dir(ectory) containing markup files,
   an ext(ension) for finding markup file names, and a render-fn that returns
   a fn with the signature [java.io.Reader config] -> String (HTML)."
-  (dir [this])
-  (ext [this])
-  (render-fn [this]))
+  (dir [this] "Returns the name of the directory under the content root that is expected to hold files in this markup format")
+  (ext [this] "Return the file extension of files using this markup")
+  (render-fn [this] "Returns `(fn [^java.io.Reader rdr config] ..)` producing the HTML string; `config` is the cryogen config map"))
 
 (defn rewrite-hrefs
   "Injects the blog prefix in front of any local links
