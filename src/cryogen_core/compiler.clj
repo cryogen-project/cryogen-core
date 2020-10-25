@@ -21,13 +21,43 @@
             [cryogen-core.toc :as toc]
             [clojure.string :as str])
   (:import java.util.Locale
-           (java.io StringReader)
            (java.util Date)
            (java.net URLEncoder)))
 
 (cache-off!)
 
 (def content-root "content")
+
+(defn only-changed-files-filter
+  "Returns a page/post filter that only accepts these files:
+  
+  - no filtering if `changeset` is empty (as it means this is the first build)
+  - recompile the post/page that has changed since the last compilation
+  - recompile everything if a template HTML file has changed
+
+  Arguments:
+  - `changeset` - sequence of `java.io.File` of relative paths within the
+    project, such as `File[content/asc/pages/about.asc]`, as provided by
+    [[cryogen-core.watcher/find-changes]]
+
+  Downsides: Tags, archives, index etc. will only know about the recompiled
+  post and not the others. Previous/next links on neighbour posts won't be
+  updated either."
+  [changeset]
+  (let [changed-paths      (->> changeset (map #(.getPath %)) set)
+        theme-html-change? (some
+                             (fn [^java.io.File file]
+                               (and (string/starts-with?
+                                      (.getPath file) "themes/")
+                                    (string/ends-with?
+                                      (.getName file) ".html")))
+                             changeset)]
+    (if (empty? changeset)
+      (constantly true)
+      (fn [^java.io.File page]
+        (or
+          theme-html-change?
+          (contains? changed-paths (.getPath page)))))))
 
 (defn re-pattern-from-exts
   "Creates a properly quoted regex pattern for the given file extensions"
@@ -165,12 +195,13 @@
 (defn read-posts
   "Returns a sequence of maps representing the data from markdown files of posts.
    Sorts the sequence by post date."
-  [config]
+  [config incremental-compile-filter]
   (->> (m/markups)
        (mapcat
          (fn [mu]
            (->>
              (find-posts config mu)
+             (filter incremental-compile-filter)
              (pmap #(parse-post % config mu))
              (remove #(= (:draft? %) true)))))
        (sort-by :date)
@@ -180,12 +211,13 @@
 (defn read-pages
   "Returns a sequence of maps representing the data from markdown files of pages.
   Sorts the sequence by post date."
-  [config]
+  [config incremental-compile-filter]
   (->> (m/markups)
        (mapcat
          (fn [mu]
            (->>
              (find-pages config mu)
+             (filter incremental-compile-filter)
              (map #(parse-page % config mu)))))
        (sort-by :page-index)))
 
@@ -535,7 +567,7 @@
 
   Params:
    - `overrides-and-hooks` - may contain overrides for `config.edn`; anything
-      here will be available to the page templates, except for these two special
+      here will be available to the page templates, except for the following special
                 parameters:
      - `:extend-params-fn` - a function (`params`, `site-data`) -> `params` -
                              use it to derive/add additional params for templates
@@ -545,6 +577,10 @@
                               `(fn postprocess [article params] (update article :content selmer.parser/render params))`
      - `:update-article-fn` - a function (`article`, `config`) -> `article` to update a
                             parsed page/post. Return nil to exclude it.
+     - `changeset` - as supplied by
+                   [[cryogen-core.watcher/start-watcher-for-changes!]] to its callback
+                   for incremental compilation, see [[only-changed-files-filter]]
+                   for details
 
   Note on terminology:
    - `article` - a post or page data (including its title, content, etc.)
@@ -556,15 +592,19 @@
   ([{:keys [extend-params-fn update-article-fn]
      :or   {extend-params-fn            (fn [params _] params)
             update-article-fn           (fn [article _] article)}
-     :as   overrides-and-hooks}]
+     :as   overrides-and-hooks}
+    changeset]
    (println (green "compiling assets..."))
    (when-not (empty? overrides-and-hooks)
      (println (yellow "overriding config.edn with:"))
      (pprint overrides-and-hooks))
-   (let [overrides    (dissoc overrides-and-hooks :extend-params-fn :update-article-fn)
+   (let [inc-compile? (seq changeset) ; Don't recompile unchanged posts/pages (ie. most time-consuming)
+         inc-compile-filter (only-changed-files-filter changeset)
+         overrides    (dissoc overrides-and-hooks
+                              :extend-params-fn :update-article-fn)
          {:keys [^String site-url blog-prefix rss-name recent-posts keep-files ignored-files previews? author-root-uri theme]
           :as   config} (resolve-config overrides)
-         posts        (->> (read-posts config)
+         posts        (->> (read-posts config inc-compile-filter)
                            (add-prev-next)
                            (map klipse/klipsify)
                            (map (partial add-description config))
@@ -573,7 +613,7 @@
          posts-by-tag (group-by-tags posts)
          posts        (tag-posts posts config)
          latest-posts (->> posts (take recent-posts) vec)
-         pages        (->> (read-pages config)
+         pages        (->> (read-pages config inc-compile-filter)
                            (map klipse/klipsify)
                            (map (partial add-description config))
                            (map #(update-article-fn % config))
@@ -615,7 +655,8 @@
        (util/file->url (io/as-file (cryogen-io/path "themes" theme))))
      (cryogen-io/set-public-path! (:public-dest config))
 
-     (cryogen-io/wipe-public-folder keep-files)
+     (when-not inc-compile?
+       (cryogen-io/wipe-public-folder keep-files))
      (println (blue "compiling sass"))
      (sass/compile-sass->css! config)
      (println (blue "copying theme resources"))
@@ -641,17 +682,18 @@
      (->> (rss/make-channel config posts)
           (cryogen-io/create-file (cryogen-io/path "/" blog-prefix rss-name)))
      (if (:rss-filters config) (println (blue "generating filtered rss")))
-     (rss/make-filtered-channels config posts-by-tag))))
+     (rss/make-filtered-channels config posts-by-tag)
+     (when inc-compile?
+       (println (yellow "BEWARE: Incremental compilation, things are missing. Make a full build before publishing."))))))
 
 (defn compile-assets-timed
   "See the docstring for [[compile-assets]]"
-  ([] (compile-assets-timed nil))
-  ([config]
+  ([] (compile-assets-timed {}))
+  ([config] (compile-assets-timed config {}))
+  ([config changeset]
    (time
     (try
-      (if config
-        (compile-assets config)
-        (compile-assets))
+      (compile-assets config changeset)
       (catch Exception e
         (if (or (instance? IllegalArgumentException e)
                 (instance? clojure.lang.ExceptionInfo e))
