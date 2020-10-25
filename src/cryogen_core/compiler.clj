@@ -101,7 +101,7 @@
           page-name   (if (:collapse-subdirs? config) (.getName page) (string/replace page-fwd re-root ""))
           file-name   (string/replace page-name (re-pattern-from-exts (m/exts markup)) ".html")
           page-meta   (read-page-meta page-name rdr)
-          content     ((m/render-fn markup) rdr config)
+          content     ((m/render-fn markup) rdr (assoc config :page-meta page-meta))
           content-dom (util/trimmed-html-snippet content)]
       {:file-name   file-name
        :page-meta   page-meta
