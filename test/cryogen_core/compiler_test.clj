@@ -132,3 +132,17 @@ and more content.
           invalid-metadata (reader-string "{:layout \"post\" :title \"Hello World\"}")]
       (is (read-page-meta nil valid-metadata))
       (is (thrown? Exception (read-page-meta nil invalid-metadata))))))
+
+(deftest tags-are-url-encoded
+  (testing "URL encode tags"
+    (let [config {:tag-root-uri "tags-output" :blog-prefix "/blog" :clean-urls :trailing-slash}]
+    (are [expected tag] (= expected (:uri (tag-info config tag)))
+                        "/blog/tags-output/a-tag/" "a-tag"
+                        "/blog/tags-output/c%23/" "c#"
+                        "/blog/tags-output/why%3F/" "why?"
+                        "/blog/tags-output/with%20a%20space/" "with a space")
+    (are [expected tag] (= expected (:file-path (tag-info config tag)))
+                        "/blog/tags-output/a-tag/" "a-tag"
+                        "/blog/tags-output/c#/" "c#"
+                        "/blog/tags-output/why?/" "why?"
+                        "/blog/tags-output/with a space/" "with a space"))))
