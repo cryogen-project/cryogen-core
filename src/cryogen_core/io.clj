@@ -40,6 +40,12 @@
           matches (map #(re-find % name) ignored-files)]
       (not (some seq matches)))))
 
+(defn ignore-path [ignored-paths]
+  (fn [^java.io.File file]
+    (let [path    (.getPath file)
+          matches (map #(re-find % path) ignored-paths)]
+      (not (some seq matches)))))
+
 (defn find-assets
   "Find all assets in the given root directory (f) and the given file
   extensions (exts) ignoring any files that match the given (ignored-files).
