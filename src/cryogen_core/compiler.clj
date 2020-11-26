@@ -272,12 +272,20 @@
       (dissoc :content-dom)
       (assoc :content (util/enlive->html-text dom))))
 
-(defn htmlize-content [params]
-  (cond
-    (contains? params :posts) (update params :posts (partial map content-dom->html))
-    (contains? params :post) (update params :post content-dom->html)
-    (contains? params :page) (update params :page content-dom->html)
-    :else params))
+(defn htmlize-content [{:keys [postprocess-article-html-fn] :as params}]
+  (letfn [(postprocess-article [article]
+            (if postprocess-article-html-fn
+              (postprocess-article-html-fn article params)
+              article))
+          (htmlize-article [article]
+            (-> article
+                content-dom->html
+                postprocess-article))]
+    (cond
+      (contains? params :posts) (update params :posts (partial map htmlize-article))
+      (contains? params :post) (update params :post htmlize-article)
+      (contains? params :page) (update params :page htmlize-article)
+      :else params)))
 
 (defn render-file
   "Wrapper around `selmer.parser/render-file` with pre-processing"
@@ -520,13 +528,23 @@
                 parameters:
      - `:extend-params-fn` - a function (`params`, `site-data`) -> `params` -
                              use it to derive/add additional params for templates
+     - `:postprocess-article-html-fn` - a function (`article`, `params`) -> `article`
+                             called after the `:content` has been rendered to HTML and
+                              right before it is written to the disk. Example fn:
+                              `(fn postprocess [article params] (update article :content selmer.parser/render params))`
      - `:update-article-fn` - a function (`article`, `config`) -> `article` to update a
-                            parsed page/post. Return nil to exclude it."
+                            parsed page/post. Return nil to exclude it.
+
+  Note on terminology:
+   - `article` - a post or page data (including its title, content, etc.)
+   - `config` - the site-wide configuration ± from `config.edn` and the provided overrides
+   - `params` - `config` + content such as `:pages` etc.
+   - `site-data` - a subset of the site content such as `:pages`, `:posts` - see the code below"
   ([]
    (compile-assets {}))
   ([{:keys [extend-params-fn update-article-fn]
-     :or   {extend-params-fn  (fn [params _] params)
-            update-article-fn (fn [article _] article)}
+     :or   {extend-params-fn            (fn [params _] params)
+            update-article-fn           (fn [article _] article)}
      :as   overrides-and-hooks}]
    (println (green "compiling assets..."))
    (when-not (empty? overrides-and-hooks)
