@@ -22,10 +22,10 @@
     (when-some [changes (set/difference new-sum-set old-sum-set)]
       (vals (select-keys new-sums changes)))))
 
-(defn watch-assets [sums root ignored-files action]
+(defn watch-assets [sums root ignored-files callback]
   (let [new-sums (checksums root ignored-files)]
-    (when (find-changes @sums new-sums)
-      (action)
+    (when-let [changeset (find-changes @sums new-sums)]
+      (callback changeset)
       (reset! sums new-sums))))
 
 (defn watch-with-fallback!
@@ -38,9 +38,21 @@
       (prn e "WARN - no native fs events; falling back to polling filesystem")
       (apply hawk/watch! (assoc opts :watcher :polling) groups))))
 
-(defn start-watcher! [root ignored-files action]
+(defn start-watcher-for-changes!
+  "Start watching files under `root` for changes, excluding `ignored-files`
+  (as per [[cryogen-core.io/ignore]]), and call `(callback <callback-args> changeset)`
+  upon every change detected. Where:
+  - `changeset` is a sequence of `java.io.File` with `root`-relative paths.
+  - `callback-args` are any additional arguments to the callback, which will be
+    passed before the changeset"
+  [root ignored-files callback & callback-args]
   (let [sums (atom (checksums root ignored-files))
         handler (fn [ctx e]
-                  (watch-assets sums root ignored-files action))]
+                  (watch-assets sums root ignored-files #(apply callback (concat callback-args %&))))]
     (watch-with-fallback! {} [{:paths   [root]
                                :handler handler}])))
+
+(defn start-watcher!
+  "Same as [[start-watcher-for-changes!]] but expects 0-argument action"
+  [root ignored-files action]
+  (start-watcher-for-changes! root ignored-files (fn [_] (action))))
