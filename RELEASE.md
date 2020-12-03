@@ -25,11 +25,13 @@ elapsed time basis.  Typically once there are significant changes.
 
 Note this uses `0.1.12` as an example new release number.
 
-1. Create a release branch on your local repo of your fork on Github.
+1. Create a release branch on your local repo of your fork of this
+  repo on Github.
   ```
   git checkout master
   git pull
   git checkout -b release-0.1.12
+  git push -u origin release-0.1.12
   ```
 2. Update [CHANGELOG.md](CHANGELOG.md)
   * Write the release highlights in the `Unreleased` section.
