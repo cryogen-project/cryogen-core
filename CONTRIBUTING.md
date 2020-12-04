@@ -21,5 +21,10 @@ If you want to fix a bug or address an issue:
 5. Push the feature branch back to your forked repo on Github.
 6. Open a Pull Request (PR) back to this repo.
 
+Alternatively, especially if the changes are small, limited to one
+file, and you have write access to the repo, you can make the changes
+directly on Github, but please make a new branch and open a PR as
+above.
+
 Please mention the open bug issue number within your PR if
 applicable.

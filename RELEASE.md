@@ -10,7 +10,7 @@ elapsed time basis.  Typically once there are significant changes.
 ## Invariants / rules
 
 - Pull Requests should not change the version number in `project.clj`.
-- Each Pull Request should update the `CHANGELOG.md` file as
+- Each Pull Request (PR) should update the `CHANGELOG.md` file as
   appropriate.
 - In the normal state of this repository, the version in `project.clj`
   should be of the form `x.y.z-SNAPSHOT`, denoting that the repo is in
@@ -33,6 +33,9 @@ Note this uses `0.1.12` as an example new release number.
   git checkout -b release-0.1.12
   git push -u origin release-0.1.12
   ```
+  Alternatively, if you have write access to the repo, make a new
+  branch on the repo and make the changes directly on Github and
+  create a PR.
 2. Update [CHANGELOG.md](CHANGELOG.md)
   * Write the release highlights in the `Unreleased` section.
   * Add a section for the new release just under the `Unreleased` section.
@@ -47,6 +50,8 @@ Note this uses `0.1.12` as an example new release number.
   git commit -m "Prepare release 0.1.12"
   git push origin
   ```
+  Alternatively, if you have made the changes directly on Github,
+  there is nothing further to do.
 6. Create a pull request. 
 7. Merge the pull request into the primary repo on Github.
 8. Tag the new commit on Github with the new release number (e.g.,
