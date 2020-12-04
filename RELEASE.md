@@ -39,25 +39,18 @@ Note this uses `0.1.12` as an example new release number.
   * Update the links section at the end of the file to include links
     for the new release and update the link for the Unreleased
     version.
-3. Update the version in [project.clj](project.clj). 
+3. Update the version in [project.clj](project.clj).
 4. Update any version numbers in [README.md](README.md).
 5. Push changes to your fork on Github.
   ```
   git add .
-  git commit -m "Release 0.1.12"
+  git commit -m "Prepare release 0.1.12"
   git push origin
   ```
 6. Create a pull request. 
-7. Get other maintainers to review the pull request.
-8. If changes are required, update the pull request.
-9. Once all is okay, merge the pull request into the primary repo on
-   Github.
-10. Tag the new commit on Github with the new release number (e.g.,
-    `0.1.12`).
-11. Create a new release on Github with the new tag and the same
-    release number as the new tag.
-12. Publish the release on Github.
-13. Verify everything looks good at [github](https://github.com/cryogen-project/cryogen-core/releases)	
-14. Publish the release to Clojars.
-15. Update the version in [project.clj](project.clj) to next snapshot
+7. Merge the pull request into the primary repo on Github.
+8. Tag the new commit on Github with the new release number (e.g.,
+   `0.1.12`).
+9. Publish the release to Clojars.
+10. Update the version in [project.clj](project.clj) to next snapshot
     version (e.g., `0.1.13-SNAPSHOT`).
