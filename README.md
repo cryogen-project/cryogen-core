@@ -9,7 +9,7 @@
 
 ## License
 
-Copyright © 2014 Carmen La
+Copyright © 2014-2020 Carmen La
 
 Distributed under the Eclipse Public License either version 1.0 or (at
 your option) any later version.
