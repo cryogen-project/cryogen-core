@@ -7,7 +7,19 @@ sections for `Highlights`, `Breaking` and `Changes since x.y.z`.
 
 ## [Unreleased]
 
+## [0.4.0] - 2020-12-05
+
+### Highlights
+- Allow fast compilation of changed files only.
+- Enable post-processing of HTML files.
+- Allow the sitemap to exclude specified files.
+
+### Fixes
+- Links to tag pages are URL-encoded. Tags with special chars now work correctly.
+
 ### Changes since 0.3.2
+- [#154](https://github.com/cryogen-project/cryogen-core/pull/154) Simplify the contrib/release docs (holyjak)
+- [#153](https://github.com/cryogen-project/cryogen-core/pull/153) Add support files (bombaywalla)
 - [#152](https://github.com/cryogen-project/cryogen-core/pull/152) Enable postprocessing of article HTML (holyjak)
 - [#150](https://github.com/cryogen-project/cryogen-core/pull/150) Allow certain paths to be excluded from the sitemap (seancorfield)
 - [#149](https://github.com/cryogen-project/cryogen-core/pull/149) Feature: Incremental compilation (changed only) (holyjak)
@@ -291,40 +303,41 @@ has been updated here.
 
 [Unreleased]: https://github.com/cryogen-project/cryogen-core/compare/0.4.0...HEAD
 
-[0.1.66]: https://github.com/cryogen-project/cryogen-core/compare/0.3.2...0.3.1
-[0.1.66]: https://github.com/cryogen-project/cryogen-core/compare/0.3.1...0.3.0
-[0.1.66]: https://github.com/cryogen-project/cryogen-core/compare/0.3.0...0.2.3
-[0.1.66]: https://github.com/cryogen-project/cryogen-core/compare/0.2.3...0.2.2
-[0.1.66]: https://github.com/cryogen-project/cryogen-core/compare/0.2.2...0.2.1
-[0.1.66]: https://github.com/cryogen-project/cryogen-core/compare/0.2.1...0.2.0
-[0.1.66]: https://github.com/cryogen-project/cryogen-core/compare/0.2.0...0.1.68
-[0.1.66]: https://github.com/cryogen-project/cryogen-core/compare/0.1.68...0.1.67
-[0.1.66]: https://github.com/cryogen-project/cryogen-core/compare/0.1.67...0.1.66
-[0.1.66]: https://github.com/cryogen-project/cryogen-core/compare/0.1.66...0.1.65
-[0.1.66]: https://github.com/cryogen-project/cryogen-core/compare/0.1.65...0.1.64
-[0.1.66]: https://github.com/cryogen-project/cryogen-core/compare/0.1.64...0.1.62
-[0.1.66]: https://github.com/cryogen-project/cryogen-core/compare/0.1.62...0.1.61
-[0.1.66]: https://github.com/cryogen-project/cryogen-core/compare/0.1.61...0.1.60
-[0.1.66]: https://github.com/cryogen-project/cryogen-core/compare/0.1.60...0.1.59
-[0.1.66]: https://github.com/cryogen-project/cryogen-core/compare/0.1.59...0.1.58
-[0.1.66]: https://github.com/cryogen-project/cryogen-core/compare/0.1.58...0.1.57
-[0.1.66]: https://github.com/cryogen-project/cryogen-core/compare/0.1.57...0.1.56
-[0.1.66]: https://github.com/cryogen-project/cryogen-core/compare/0.1.56...0.1.55
-[0.1.66]: https://github.com/cryogen-project/cryogen-core/compare/0.1.55...0.1.54
-[0.1.66]: https://github.com/cryogen-project/cryogen-core/compare/0.1.54...0.1.53
-[0.1.66]: https://github.com/cryogen-project/cryogen-core/compare/0.1.53...0.1.52
-[0.1.66]: https://github.com/cryogen-project/cryogen-core/compare/0.1.52...0.1.51
-[0.1.66]: https://github.com/cryogen-project/cryogen-core/compare/0.1.51...0.1.50
-[0.1.66]: https://github.com/cryogen-project/cryogen-core/compare/0.1.50...0.1.49
-[0.1.66]: https://github.com/cryogen-project/cryogen-core/compare/0.1.49...0.1.48
-[0.1.66]: https://github.com/cryogen-project/cryogen-core/compare/0.1.48...0.1.26
-[0.1.66]: https://github.com/cryogen-project/cryogen-core/compare/0.1.26...0.1.25
-[0.1.66]: https://github.com/cryogen-project/cryogen-core/compare/0.1.25...0.1.24
-[0.1.66]: https://github.com/cryogen-project/cryogen-core/compare/0.1.24...0.1.23
-[0.1.66]: https://github.com/cryogen-project/cryogen-core/compare/0.1.23...0.1.22
-[0.1.66]: https://github.com/cryogen-project/cryogen-core/compare/0.1.22...0.1.29
-[0.1.66]: https://github.com/cryogen-project/cryogen-core/compare/0.1.20...0.1.19
-[0.1.66]: https://github.com/cryogen-project/cryogen-core/compare/0.1.19...0.1.18
-[0.1.66]: https://github.com/cryogen-project/cryogen-core/compare/0.1.18...0.1.14
-[0.1.14]: https://github.com/cryogen-project/cryogen-core/compare/0.1.14...0.1.0
+[0.4.0]: https://github.com/cryogen-project/cryogen-core/compare/0.3.2...0.4.0
+[0.3.2]: https://github.com/cryogen-project/cryogen-core/compare/0.3.1...0.3.2
+[0.3.1]: https://github.com/cryogen-project/cryogen-core/compare/0.3.0...0.3.1
+[0.3.0]: https://github.com/cryogen-project/cryogen-core/compare/0.2.3...0.3.0
+[0.2.3]: https://github.com/cryogen-project/cryogen-core/compare/0.2.2...0.2.3
+[0.2.2]: https://github.com/cryogen-project/cryogen-core/compare/0.2.1...0.2.2
+[0.2.1]: https://github.com/cryogen-project/cryogen-core/compare/0.2.0...0.2.1
+[0.2.0]: https://github.com/cryogen-project/cryogen-core/compare/0.1.68...0.2.0
+[0.1.68]: https://github.com/cryogen-project/cryogen-core/compare/0.1.67...0.1.68
+[0.1.67]: https://github.com/cryogen-project/cryogen-core/compare/0.1.66...0.1.67
+[0.1.66]: https://github.com/cryogen-project/cryogen-core/compare/0.1.65...0.1.66
+[0.1.65]: https://github.com/cryogen-project/cryogen-core/compare/0.1.64...0.1.65
+[0.1.64]: https://github.com/cryogen-project/cryogen-core/compare/0.1.62...0.1.64
+[0.1.62]: https://github.com/cryogen-project/cryogen-core/compare/0.1.61...0.1.62
+[0.1.61]: https://github.com/cryogen-project/cryogen-core/compare/0.1.60...0.1.61
+[0.1.60]: https://github.com/cryogen-project/cryogen-core/compare/0.1.59...0.1.60
+[0.1.59]: https://github.com/cryogen-project/cryogen-core/compare/0.1.58...0.1.59
+[0.1.58]: https://github.com/cryogen-project/cryogen-core/compare/0.1.57...0.1.58
+[0.1.57]: https://github.com/cryogen-project/cryogen-core/compare/0.1.56...0.1.57
+[0.1.56]: https://github.com/cryogen-project/cryogen-core/compare/0.1.55...0.1.56
+[0.1.55]: https://github.com/cryogen-project/cryogen-core/compare/0.1.54...0.1.55
+[0.1.54]: https://github.com/cryogen-project/cryogen-core/compare/0.1.53...0.1.54
+[0.1.53]: https://github.com/cryogen-project/cryogen-core/compare/0.1.52...0.1.53
+[0.1.52]: https://github.com/cryogen-project/cryogen-core/compare/0.1.51...0.1.52
+[0.1.51]: https://github.com/cryogen-project/cryogen-core/compare/0.1.50...0.1.51
+[0.1.50]: https://github.com/cryogen-project/cryogen-core/compare/0.1.49...0.1.50
+[0.1.49]: https://github.com/cryogen-project/cryogen-core/compare/0.1.48...0.1.49
+[0.1.48]: https://github.com/cryogen-project/cryogen-core/compare/0.1.26...0.1.48
+[0.1.26]: https://github.com/cryogen-project/cryogen-core/compare/0.1.25...0.1.26
+[0.1.25]: https://github.com/cryogen-project/cryogen-core/compare/0.1.24...0.1.25
+[0.1.24]: https://github.com/cryogen-project/cryogen-core/compare/0.1.23...0.1.24
+[0.1.23]: https://github.com/cryogen-project/cryogen-core/compare/0.1.22...0.1.23
+[0.1.22]: https://github.com/cryogen-project/cryogen-core/compare/0.1.20...0.1.22
+[0.1.20]: https://github.com/cryogen-project/cryogen-core/compare/0.1.19...0.1.20
+[0.1.19]: https://github.com/cryogen-project/cryogen-core/compare/0.1.18...0.1.19
+[0.1.18]: https://github.com/cryogen-project/cryogen-core/compare/0.1.14...0.1.18
+[0.1.14]: https://github.com/cryogen-project/cryogen-core/compare/0.1.0...0.1.14
 
