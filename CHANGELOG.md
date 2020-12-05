@@ -18,6 +18,7 @@ sections for `Highlights`, `Breaking` and `Changes since x.y.z`.
 - Links to tag pages are URL-encoded. Tags with special chars now work correctly.
 
 ### Changes since 0.3.2
+- [#155](https://github.com/cryogen-project/cryogen-core/pull/155) Prepare for 0.4.0 (bombaywalla)
 - [#154](https://github.com/cryogen-project/cryogen-core/pull/154) Simplify the contrib/release docs (holyjak)
 - [#153](https://github.com/cryogen-project/cryogen-core/pull/153) Add support files (bombaywalla)
 - [#152](https://github.com/cryogen-project/cryogen-core/pull/152) Enable postprocessing of article HTML (holyjak)
