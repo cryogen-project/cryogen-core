@@ -25,17 +25,13 @@ elapsed time basis.  Typically once there are significant changes.
 
 Note this uses `0.1.12` as an example new release number.
 
-1. Create a release branch on your local repo of your fork of this
-  repo on Github.
+1. Create a release branch.
   ```
   git checkout master
   git pull
   git checkout -b release-0.1.12
   git push -u origin release-0.1.12
   ```
-  Alternatively, if you have write access to the repo, make a new
-  branch on the repo and make the changes directly on Github and
-  create a PR.
 2. Update [CHANGELOG.md](CHANGELOG.md)
   * Write the release highlights in the `Unreleased` section.
   * Add a section for the new release just under the `Unreleased` section.
@@ -44,17 +40,15 @@ Note this uses `0.1.12` as an example new release number.
     version.
 3. Update the version in [project.clj](project.clj).
 4. Update any version numbers in [README.md](README.md).
-5. Push changes to your fork on Github.
+5. Push changes to GitHub.
   ```
   git add .
   git commit -m "Prepare release 0.1.12"
   git push origin
   ```
-  Alternatively, if you have made the changes directly on Github,
-  there is nothing further to do.
-6. Create a pull request. 
-7. Merge the pull request into the primary repo on Github.
-8. Tag the new commit on Github with the new release number (e.g.,
+6. Create a pull request.
+7. Merge the pull request into the primary repo on GitHub.
+8. Tag the new commit on GitHub with the new release number (e.g.,
    `0.1.12`).
 9. Publish the release to Clojars.
 10. Update the version in [project.clj](project.clj) to next snapshot
