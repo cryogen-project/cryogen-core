@@ -587,8 +587,8 @@
    - `config` - the site-wide configuration ± from `config.edn` and the provided overrides
    - `params` - `config` + content such as `:pages` etc.
    - `site-data` - a subset of the site content such as `:pages`, `:posts` - see the code below"
-  ([]
-   (compile-assets {}))
+  ([] (compile-assets {} nil))
+  ([overrides-and-hooks] (compile-assets overrides-and-hooks nil))
   ([{:keys [extend-params-fn update-article-fn]
      :or   {extend-params-fn            (fn [params _] params)
             update-article-fn           (fn [article _] article)}
