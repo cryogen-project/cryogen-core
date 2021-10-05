@@ -651,6 +651,10 @@
                          :navbar-pages navbar-pages
                          :sidebar-pages sidebar-pages})]
 
+     (assert (not (and (:posts params) (not (:posts params0))))
+             (str "Sorry, you cannot add `:posts` to params because this is"
+                  " used internally at some places. Pick a different keyword."))
+
      (selmer.parser/set-resource-path!
        (util/file->url (io/as-file (cryogen-io/path "themes" theme))))
      (cryogen-io/set-public-path! (:public-dest config))
