@@ -13,3 +13,6 @@ pom.xml.asc
 /bin/
 /.classpath
 /.project
+/.clj-kondo/
+/.lsp/
+/.calva/

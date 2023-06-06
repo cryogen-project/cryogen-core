@@ -1,5 +1,6 @@
 (ns cryogen-core.util
   (:require
+   [clojure.string :refer [last-index-of]]
     [clojure.walk :as walk]
     [hiccup.core :as hiccup]
     [net.cgrand.enlive-html :as enlive]))
@@ -60,3 +61,11 @@
   "Converts a java.io.File to a java.net.URL."
   [^java.io.File f]
   (.. f (getAbsoluteFile) (toURI) (toURL)))
+
+(defn parse-post-date
+  "Parses the post date from the post's file name and returns the corresponding java date object"
+  [^String file-name date-fmt]
+  (let [fmt (java.text.SimpleDateFormat. date-fmt)]
+    (if-let [last-slash (last-index-of file-name "/")]
+      (.parse fmt (.substring file-name (inc last-slash) (+ last-slash 11)))
+      (.parse fmt (.substring file-name 0 10)))))

@@ -10,6 +10,7 @@
             [text-decoration.core :refer :all]
             [cryogen-core.io :as cryogen-io]
             [cryogen-core.config :refer [resolve-config]]
+            [cryogen-core.infer-meta :refer [infer-meta infer-file-name]]
             [cryogen-core.klipse :as klipse]
             [cryogen-core.markup :as m]
             [cryogen-core.rss :as rss]
@@ -91,15 +92,6 @@
   [{:keys [page-root ignored-files]} mu]
   (find-entries page-root mu ignored-files))
 
-(defn parse-post-date
-  "Parses the post date from the post's file name and returns the corresponding java date object"
-  [^String file-name date-fmt]
-  (let [fmt (java.text.SimpleDateFormat. date-fmt)]
-    (if-let [last-slash (string/last-index-of file-name "/")]
-      (.parse fmt (.substring file-name (inc last-slash) (+ last-slash 11)))
-      (.parse fmt (.substring file-name 0 10)))))
-
-
 (defn page-uri
   "Creates a URI from file name. `uri-type` is any of the uri types specified in config, e.g., `:post-root-uri`."
   ([file-name params]
@@ -123,10 +115,7 @@
       (throw (ex-info (ex-message e)
                       (assoc (ex-data e) :page page))))))
 
-(defn page-content
-  "Returns a map with the given page's file-name, metadata and content parsed from
-  the file with the given markup."
-  [^java.io.File page config markup]
+(defn- using-embedded-metadata [page config markup]
   (with-open [rdr (java.io.PushbackReader. (io/reader page))]
     (let [re-root     (re-pattern (str "^.*?(" (:page-root config) "|" (:post-root config) ")/"))
           page-fwd    (string/replace (str page) "\\" "/")  ;; make it work on Windows
@@ -138,6 +127,30 @@
       {:file-name   file-name
        :page-meta   page-meta
        :content-dom content-dom})))
+
+(defn- using-inferred-metadata [page markup config]
+  (with-open [rdr (java.io.PushbackReader. (io/reader page))]
+    (let [content-dom (util/trimmed-html-snippet ((m/render-fn markup) rdr config)) 
+          page-meta (infer-meta page config markup)
+          file-name (infer-file-name page page-meta config)]
+      {:file-name   file-name
+       :page-meta   page-meta
+       :content-dom content-dom})))
+
+(defn page-content
+  "Returns a map with the given page's file-name, metadata and content parsed from
+  the file with the given markup."
+  [^java.io.File page config markup]
+  (try
+    (using-embedded-metadata page config markup)
+    (catch Exception embedded-fail
+           (try
+             (using-inferred-metadata page markup config)
+      (catch Exception inferred-fail
+        (throw (ex-info "Could not compile content of page"
+                       {:page (.getName page)
+                        :embedded-fail embedded-fail
+                        :inferred-fail inferred-fail})))))))
 
 (defn add-toc
   "Adds :toc to article, if necessary"
@@ -177,7 +190,7 @@
   (let [{:keys [file-name page-meta content-dom]} (page-content page config markup)]
     (let [date            (if (:date page-meta)
                             (.parse (java.text.SimpleDateFormat. (:post-date-format config)) (:date page-meta))
-                            (parse-post-date file-name (:post-date-format config)))
+                            (util/parse-post-date file-name (:post-date-format config)))
           archive-fmt     (java.text.SimpleDateFormat. ^String (:archive-group-format config) (Locale/getDefault))
           formatted-group (.format archive-fmt date)]
       (-> (merge-meta-and-content file-name (update page-meta :layout #(or % :post)) content-dom)
