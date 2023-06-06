@@ -143,14 +143,14 @@
   [^java.io.File page config markup]
   (try
     (using-embedded-metadata page config markup)
-    (catch Exception embedded-fail
-           (try
-             (using-inferred-metadata page markup config)
-      (catch Exception inferred-fail
-        (throw (ex-info "Could not compile content of page"
-                       {:page (.getName page)
-                        :embedded-fail embedded-fail
-                        :inferred-fail inferred-fail})))))))
+    (catch Throwable embedded-fail
+      (try
+        (using-inferred-metadata page markup config)
+        (catch Throwable inferred-fail
+          (throw (ex-info "Could not compile content of page"
+                          {:page (.getName page)
+                           :embedded-fail embedded-fail
+                           :inferred-fail inferred-fail})))))))
 
 (defn add-toc
   "Adds :toc to article, if necessary"

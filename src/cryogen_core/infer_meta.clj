@@ -4,7 +4,8 @@
             [clojure.string :refer [capitalize join lower-case replace]]
             [cryogen-core.markup :refer [exts render-fn]]
             [cryogen-core.util :refer [parse-post-date trimmed-html-snippet]])
-  (:import [java.nio.file Files FileSystems LinkOption]
+  (:import [java.util Date Locale]
+           [java.nio.file Files FileSystems LinkOption]
            [java.nio.file.attribute FileOwnerAttributeView]))
 
 ;; see https://gist.github.com/saidone75/0844f40d5f2d8b129cb7302b7cf40541
@@ -43,29 +44,28 @@
     (str (:date meta) "-" (replace (lower-case (:title meta)) #" +" "-") ".html")
     (let [re-root     (re-pattern (str "^.*?(" (:page-root config) "|" (:post-root config) ")/"))
           page-fwd    (replace (str page) "\\" "/")  ;; make it work on Windows
-          page-name   (if (:collapse-subdirs? config) 
-                        (.getName page) 
+          page-name   (if (:collapse-subdirs? config)
+                        (.getName page)
                         (replace page-fwd re-root ""))]
-    (replace page-name (re-pattern-from-exts 
-                        [".md"]  ;;(exts markup)
-                        ) ".html"))))
+      (replace page-name (re-pattern-from-exts
+                          [".md"]  ;;(exts markup)
+                          )".html"))))
 
 (defn infer-title
   "Infer the title of this page, ideally by extracting the first `H1` element from this
    `dom` (Document Object Model) of its content, given this `config`."
-  ;; at this stage I'm assuming that the DOM is a hiccup-formatted EDN structure at this
-  ;; stage and not a string representation of HTML, but I don't actually know this. If it 
-  ;; is, then a depth-first tree walk of the structure to extract the first vector whose
-  ;; first element is `:h1` is what we need.
+  ;; dom turns out to be a list of maps; I'm not yet certain what happens when elements
+  ;; have child elements but for the time being it doesn't matter.
   [^java.io.File page config dom]
+  (pprint dom)
   (let [page-name (.getName page)
         title-part-of-name
         (if (maybe-extract-date-from-filename page config)
           (subs page-name (count (:post-date-format config)))
-          page-name)]
-    (pprint dom)
+          page-name)
+        h1 (first (filter #(= (:tag %) :h1) dom))]
     (or
-     (first (filter #(= (first %) :h1) (tree-seq vector? identity dom)))
+     (:content h1)
      (capitalize (replace title-part-of-name #"[-_]+" " ")))))
 
 (defn infer-date
@@ -73,9 +73,11 @@
    1. the prefix of the basename of the file, if it matches `dddd-dd-dd`; or
    2. the creation date of the file, otherwise."
   [^java.io.File page config]
-  (or
-   (maybe-extract-date-from-filename page config)
-   (file-attribute page "creationTime")))
+  (.format
+   (java.text.SimpleDateFormat. ^String (:post-date-format config) (Locale/getDefault))
+   (or
+    (maybe-extract-date-from-filename page config)
+    (Date. (.toMillis (file-attribute page "creationTime"))))))
 
 (defn infer-author
   "Infer the ordinary everyday name of the author of this `page`, given this 
