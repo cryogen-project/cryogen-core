@@ -60,11 +60,6 @@
           theme-html-change?
           (contains? changed-paths (.getPath page)))))))
 
-(defn re-pattern-from-exts
-  "Creates a properly quoted regex pattern for the given file extensions"
-  [exts]
-  (re-pattern (str "(" (string/join "|" (map #(string/replace % "." "\\.") exts)) ")$")))
-
 (defn find-entries
   "Returns a list of files under the content directory according to the
   implemented Markup protocol and specified root directory. It defaults to
@@ -120,7 +115,7 @@
     (let [re-root     (re-pattern (str "^.*?(" (:page-root config) "|" (:post-root config) ")/"))
           page-fwd    (string/replace (str page) "\\" "/")  ;; make it work on Windows
           page-name   (if (:collapse-subdirs? config) (.getName page) (string/replace page-fwd re-root ""))
-          file-name   (string/replace page-name (re-pattern-from-exts (m/exts markup)) ".html")
+          file-name   (string/replace page-name (util/re-pattern-from-exts (m/exts markup)) ".html")
           page-meta   (read-page-meta page-name rdr)
           content     ((m/render-fn markup) rdr (assoc config :page-meta page-meta))
           content-dom (util/trimmed-html-snippet content)]
@@ -573,7 +568,7 @@
      content-root
      (merge config
             {:resources     folders
-             :ignored-files (map #(re-pattern-from-exts (m/exts %)) (m/markups))}))))
+             :ignored-files (map #(util/re-pattern-from-exts (m/exts %)) (m/markups))}))))
 
 (defn compile-assets
   "Generates all the html and copies over resources specified in the config.

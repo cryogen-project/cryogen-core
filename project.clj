@@ -15,6 +15,10 @@
                            [me.raynes/fs "1.4.6"]
                            [pandect "0.6.1"]
                            [prismatic/schema "1.1.12"]
-                           [selmer "1.12.31"]]
+                           [selmer "1.12.31"]
+                           ;; used in infer-meta to extract dimensions from images
+                           [net.mikera/imagez "0.12.0"]
+                           ;; used for mime type inference
+                           [com.novemberain/pantomime "2.11.0"]]
             :deploy-repositories [["snapshots" :clojars]
                                   ["releases" :clojars]])
