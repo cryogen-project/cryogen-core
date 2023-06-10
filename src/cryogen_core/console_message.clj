@@ -1,10 +1,19 @@
 (ns cryogen-core.console-message
-    (:require [text-decoration.core :refer [blue cyan green red yellow]]))
+  "Semantic wrapper for printing coloured messages to the console."
+  (:require [clojure.stacktrace :refer [print-cause-trace print-stack-trace]]
+            [text-decoration.core :refer [blue cyan green red yellow]])
+  (:import [clojure.lang IExceptionInfo]))
 
-(defmacro error
+(defn error
   "Print this error `message` to the console."
   [message]
-  `(println (red "Error: ") (yellow ~message)))
+  (println (red "Error: ")
+           (yellow (cond (instance? IExceptionInfo message) (ex-data message)
+                         (instance? Throwable message) {:message (.getMessage message)
+                                                        :stack-trace (with-out-str
+                                                                       (print-stack-trace message 10))
+                                                        :causes (with-out-str (print-cause-trace message))}
+                         :else message))))
 
 (defmacro warn
   "Print this warning `message` to the console."

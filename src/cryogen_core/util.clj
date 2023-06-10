@@ -3,7 +3,8 @@
    [clojure.string :refer [join last-index-of replace]]
     [clojure.walk :as walk]
     [hiccup.core :as hiccup]
-    [net.cgrand.enlive-html :as enlive]))
+    [net.cgrand.enlive-html :as enlive]
+    [io.aviso.exception :as e]))
 
 (defn filter-html-elems
   "Recursively walks a sequence of enlive-style html elements depth first
@@ -66,11 +67,17 @@
   "Parses the post date from the post's file name and returns the corresponding java date object"
   ;; moved from cryogen-core.compile
   [^String file-name date-fmt]
-  (let [fmt (java.text.SimpleDateFormat. date-fmt)]
-    (if-let [last-slash (last-index-of file-name "/")]
-      (.parse fmt (.substring file-name (inc last-slash) (+ last-slash 11)))
-      (.parse fmt (.substring file-name 0 10)))))
-
+  (let [fmt (java.text.SimpleDateFormat. date-fmt)
+        c (count date-fmt)]
+    (try (if-let [last-slash (last-index-of file-name "/")]
+      (.parse fmt (.substring file-name (inc last-slash) (+ last-slash (inc c))))
+      (.parse fmt (.substring file-name 0 c)))
+         (catch Exception e
+           (throw (ex-info "Failed to parse date from filename"
+                          {:date-fmt date-fmt
+                           :file-name file-name}
+                          e)))))
+)
 (defn re-pattern-from-exts
   "Creates a properly quoted regex pattern for the given file extensions"
   ;; moved from cryogen-core.compiler

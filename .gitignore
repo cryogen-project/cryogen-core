@@ -17,3 +17,5 @@ pom.xml.asc
 /.lsp/
 /.calva/
 src/cryogen_core/scratch.clj
+
+*.code-workspace

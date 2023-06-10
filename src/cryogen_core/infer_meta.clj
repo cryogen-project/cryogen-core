@@ -10,7 +10,8 @@
                                        trimmed-html-snippet]]
             [io.aviso.exception :as e]
             [mikera.image.core :refer [height load-image width]]
-            [pantomime.mime :refer [mime-type-of]])
+            [pantomime.mime :refer [mime-type-of]]
+            [cc.journeyman.real-name.core :refer [get-real-name]])
   (:import [java.util Date Locale]
            [java.nio.file Files FileSystems LinkOption]
            [java.nio.file.attribute FileOwnerAttributeView]))
@@ -33,8 +34,8 @@
 (defn- maybe-extract-date-from-filename
   [page config]
   (try (parse-post-date (.getName page) (:post-date-format config))
-       (catch Exception e
-         (error e)
+       (catch Exception _
+         (warn (format "Failed to extract date from filename `%s`." (.getName page)))
          nil)))
 
 (defmacro walk-dom
@@ -49,11 +50,11 @@
              (filter
               #(= (:tag %) :img)
               (walk-dom dom)))
-        src (-> img :attrs :src)
+        src (when img (-> img :attrs :src))
         prefix (:blog-prefix config)
-        path (if (starts-with? src prefix)
-               (subs src (count prefix))
-               src)
+        path (when src (if (starts-with? src prefix)
+                         (subs src (count prefix))
+                         src))
         ;; put paths are actually relative to the content directory
         content-path (when path (str "content" path))
         image (when path (try
@@ -144,11 +145,11 @@
    ;; this isn't good enough because so far it's only getting the username of
    ;; the author; we need a platform independent way of resolving the real name,
    ;; and so far I don't have that.
-   (try (-> (Files/getFileAttributeView (.toPath page)
-                                        FileOwnerAttributeView
-                                        (into-array LinkOption []))
-            .getOwner
-            .getName)
+   (try (get-real-name (-> (Files/getFileAttributeView (.toPath page)
+                                                       FileOwnerAttributeView
+                                                       (into-array LinkOption []))
+                           .getOwner
+                           .getName))
         (catch Exception e
           (error e)
           nil))
