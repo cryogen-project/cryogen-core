@@ -2,28 +2,29 @@
   (:require [clojure.java.io :as io]
             [clojure.pprint :refer [pprint]]
             [clojure.string :as string]
+            [clojure.string :as str]
             [clojure.zip :as zip]
-            [io.aviso.exception :refer [write-exception]]
-            [net.cgrand.enlive-html :as enlive]
-            [schema.core :as s]
-            [selmer.parser :refer [cache-off!]]
-            [text-decoration.core :refer :all]
-            [cryogen-core.io :as cryogen-io]
             [cryogen-core.config :refer [resolve-config]]
-            [cryogen-core.infer-meta :refer [infer-meta infer-file-name]]
+            [cryogen-core.infer-meta :refer [infer-file-name infer-meta
+                                             using-inferred-metadata]]
+            [cryogen-core.io :as cryogen-io]
             [cryogen-core.klipse :as klipse]
             [cryogen-core.markup :as m]
             [cryogen-core.rss :as rss]
             [cryogen-core.sass :as sass]
             [cryogen-core.schemas :as schemas]
             [cryogen-core.sitemap :as sitemap]
+            [cryogen-core.toc :as toc]
             [cryogen-core.util :as util]
             [cryogen-core.zip-util :as zip-util]
-            [cryogen-core.toc :as toc]
-            [clojure.string :as str])
-  (:import java.util.Locale
+            [io.aviso.exception :refer [write-exception]]
+            [net.cgrand.enlive-html :as enlive]
+            [schema.core :as s]
+            [selmer.parser :refer [cache-off!]]
+            [text-decoration.core :refer :all])
+  (:import (java.net URLEncoder)
            (java.util Date)
-           (java.net URLEncoder)))
+           java.util.Locale))
 
 (cache-off!)
 
@@ -47,18 +48,18 @@
   [changeset]
   (let [changed-paths      (->> changeset (map #(.getPath %)) set)
         theme-html-change? (some
-                             (fn [^java.io.File file]
-                               (and (string/starts-with?
-                                      (.getPath file) "themes/")
-                                    (string/ends-with?
-                                      (.getName file) ".html")))
-                             changeset)]
+                            (fn [^java.io.File file]
+                              (and (string/starts-with?
+                                    (.getPath file) "themes/")
+                                   (string/ends-with?
+                                    (.getName file) ".html")))
+                            changeset)]
     (if (empty? changeset)
       (constantly true)
       (fn [^java.io.File page]
         (or
-          theme-html-change?
-          (contains? changed-paths (.getPath page)))))))
+         theme-html-change?
+         (contains? changed-paths (.getPath page)))))))
 
 (defn find-entries
   "Returns a list of files under the content directory according to the
@@ -67,15 +68,15 @@
   at the content directory."
   [root mu ignored-files]
   (let [assets (cryogen-io/find-assets
-                 (cryogen-io/path content-root (m/dir mu) root)
-                 (m/exts mu)
-                 ignored-files)]
+                (cryogen-io/path content-root (m/dir mu) root)
+                (m/exts mu)
+                ignored-files)]
     (if (seq assets)
       assets
       (cryogen-io/find-assets
-        (cryogen-io/path content-root root)
-        (m/exts mu)
-        ignored-files))))
+       (cryogen-io/path content-root root)
+       (m/exts mu)
+       ignored-files))))
 
 (defn find-posts
   "Returns a list of markdown files representing posts under the post root."
@@ -123,48 +124,42 @@
        :page-meta   page-meta
        :content-dom content-dom})))
 
-(defn- using-inferred-metadata [page markup config]
-  (with-open [rdr (java.io.PushbackReader. (io/reader page))]
-    (let [content-dom (util/trimmed-html-snippet ((m/render-fn markup) rdr config)) 
-          page-meta (infer-meta page config markup)
-          file-name (infer-file-name page page-meta config)]
-      {:file-name   file-name
-       :page-meta   page-meta
-       :content-dom content-dom})))
 
-(defn page-content
+
+(def page-content
   "Returns a map with the given page's file-name, metadata and content parsed from
   the file with the given markup."
-  [^java.io.File page config markup]
-  (try
-    (using-embedded-metadata page config markup)
-    (catch Throwable embedded-fail
-      (try
-        (using-inferred-metadata page markup config)
-        (catch Throwable inferred-fail
-          (throw (ex-info "Could not compile content of page"
-                          {:page (.getName page)
-                           :embedded-fail embedded-fail
-                           :inferred-fail inferred-fail})))))))
+  (memoize
+   (fn [^java.io.File page config markup]
+     (try
+       (using-embedded-metadata page config markup)
+       (catch Throwable embedded-fail
+         (try
+           (using-inferred-metadata page markup config)
+           (catch Throwable inferred-fail
+             (throw (ex-info "Could not compile content of page"
+                             {:page (.getName page)
+                              :embedded-fail embedded-fail
+                              :inferred-fail inferred-fail})))))))))
 
 (defn add-toc
   "Adds :toc to article, if necessary"
   [{:keys [content-dom toc toc-class] :as article} config]
   (update
-    article
-    :toc
-    #(if %
-       (toc/generate-toc content-dom
-                         {:list-type toc
-                          :toc-class (or toc-class (:toc-class config) "toc")}))))
+   article
+   :toc
+   #(if %
+      (toc/generate-toc content-dom
+                        {:list-type toc
+                         :toc-class (or toc-class (:toc-class config) "toc")}))))
 
 (defn merge-meta-and-content
   "Merges the page metadata and content maps"
   [file-name page-meta content-dom]
   (merge
-    (update-in page-meta [:layout] #(str (name %) ".html"))
-    {:file-name   file-name
-     :content-dom content-dom}))
+   (update-in page-meta [:layout] #(str (name %) ".html"))
+   {:file-name   file-name
+    :content-dom content-dom}))
 
 (defn parse-page
   "Parses a page/post and returns a map of the content, uri, date etc."
@@ -172,11 +167,11 @@
   (let [{:keys [file-name page-meta content-dom]} (page-content page config markup)]
     (-> (merge-meta-and-content file-name (update page-meta :layout #(or % :page)) content-dom)
         (merge
-          {:type          :page
-           :uri           (page-uri file-name :page-root-uri config)
-           :page-index    (:page-index page-meta)
-           :klipse/global (:klipse config)
-           :klipse/local  (:klipse page-meta)})
+         {:type          :page
+          :uri           (page-uri file-name :page-root-uri config)
+          :page-index    (:page-index page-meta)
+          :klipse/global (:klipse config)
+          :klipse/local  (:klipse page-meta)})
         (add-toc config))))
 
 (defn parse-post
@@ -190,14 +185,14 @@
           formatted-group (.format archive-fmt date)]
       (-> (merge-meta-and-content file-name (update page-meta :layout #(or % :post)) content-dom)
           (merge
-            {:type                    :post
-             :date                    date
-             :formatted-archive-group formatted-group
-             :parsed-archive-group    (.parse archive-fmt formatted-group)
-             :uri                     (page-uri file-name :post-root-uri config)
-             :tags                    (set (:tags page-meta))
-             :klipse/global           (:klipse config)
-             :klipse/local            (:klipse page-meta)})
+           {:type                    :post
+            :date                    date
+            :formatted-archive-group formatted-group
+            :parsed-archive-group    (.parse archive-fmt formatted-group)
+            :uri                     (page-uri file-name :post-root-uri config)
+            :tags                    (set (:tags page-meta))
+            :klipse/global           (:klipse config)
+            :klipse/local            (:klipse page-meta)})
           (add-toc config)))))
 
 (defn read-posts
@@ -206,12 +201,12 @@
   [config incremental-compile-filter]
   (->> (m/markups)
        (mapcat
-         (fn [mu]
-           (->>
-             (find-posts config mu)
-             (filter incremental-compile-filter)
-             (pmap #(parse-post % config mu))
-             (remove #(= (:draft? %) true)))))
+        (fn [mu]
+          (->>
+           (find-posts config mu)
+           (filter incremental-compile-filter)
+           (pmap #(parse-post % config mu))
+           (remove #(= (:draft? %) true)))))
        (sort-by :date)
        reverse
        (drop-while #(and (:hide-future-posts? config) (.after ^Date (:date %) (Date.))))))
@@ -222,11 +217,11 @@
   [config incremental-compile-filter]
   (->> (m/markups)
        (mapcat
-         (fn [mu]
-           (->>
-             (find-pages config mu)
-             (filter incremental-compile-filter)
-             (map #(parse-page % config mu)))))
+        (fn [mu]
+          (->>
+           (find-pages config mu)
+           (filter incremental-compile-filter)
+           (map #(parse-page % config mu)))))
        (sort-by :page-index)))
 
 (defn tag-post
@@ -287,8 +282,8 @@
   [pages]
   (map (fn [[prev target next]]
          (assoc target
-           :prev (if prev (dissoc prev :content-dom) nil)
-           :next (if next (dissoc next :content-dom) nil)))
+                :prev (if prev (dissoc prev :content-dom) nil)
+                :next (if next (dissoc next :content-dom) nil)))
        (partition 3 1 (flatten [nil pages nil]))))
 
 (defn group-pages
@@ -342,8 +337,8 @@
   "Wrapper around `selmer.parser/render-file` with pre-processing"
   [file-path params]
   (selmer.parser/render-file
-    file-path
-    (htmlize-content params)))
+   file-path
+   (htmlize-content params)))
 
 
 (defn compile-pages
@@ -467,17 +462,17 @@
       (doseq [{:keys [index posts prev next]} previews
               :let [index-page? (= 1 index)]]
         (write-html
-          (if index-page? (page-uri "index.html" params)
-                          (page-uri (cryogen-io/path "p" (str index ".html")) params))
-          params
-          (render-file "/html/previews.html"
-                       (merge params
-                              {:active-page     "preview"
-                               :home            (when index-page? true)
-                               :selmer/context  (cryogen-io/path "/" blog-prefix "/")
-                               :posts           posts
-                               :prev-uri        prev
-                               :next-uri        next})))))))
+         (if index-page? (page-uri "index.html" params)
+             (page-uri (cryogen-io/path "p" (str index ".html")) params))
+         params
+         (render-file "/html/previews.html"
+                      (merge params
+                             {:active-page     "preview"
+                              :home            (when index-page? true)
+                              :selmer/context  (cryogen-io/path "/" blog-prefix "/")
+                              :posts           posts
+                              :prev-uri        prev
+                              :next-uri        next})))))))
 
 (defn add-description
   "Add plain text `:description` to the page/post for use in meta description etc."
@@ -485,14 +480,14 @@
     :or   {description-include-elements #{:p :h1 :h2 :h3 :h4 :h5 :h6}}}
    page]
   (update
-    page :description
-    #(cond
-       (false? %) nil  ;; if set via page meta to false, do not set
-       % %    ;; if set via page meta, use it
-       :else (->> (enlive/select
-                    (preview-dom blocks-per-preview (:content-dom page))
-                    [(set description-include-elements)])
-                  (util/enlive->plain-text)))))
+   page :description
+   #(cond
+      (false? %) nil  ;; if set via page meta to false, do not set
+      % %    ;; if set via page meta, use it
+      :else (->> (enlive/select
+                  (preview-dom blocks-per-preview (:content-dom page))
+                  [(set description-include-elements)])
+                 (util/enlive->plain-text)))))
 (defn compile-index
   "Compiles the index page into html and spits it out into the public folder"
   [{:keys [blog-prefix debug? home-page] :as params}]
@@ -652,19 +647,19 @@
                         :rss-uri       (cryogen-io/path "/" blog-prefix rss-name)
                         :site-url      (if (.endsWith site-url "/") (.substring site-url 0 (dec (count site-url))) site-url)})
          params       (extend-params-fn
-                        params0
-                        {:posts posts
-                         :pages pages
-                         :posts-by-tag posts-by-tag
-                         :navbar-pages navbar-pages
-                         :sidebar-pages sidebar-pages})]
+                       params0
+                       {:posts posts
+                        :pages pages
+                        :posts-by-tag posts-by-tag
+                        :navbar-pages navbar-pages
+                        :sidebar-pages sidebar-pages})]
 
      (assert (not (and (:posts params) (not (:posts params0))))
              (str "Sorry, you cannot add `:posts` to params because this is"
                   " used internally at some places. Pick a different keyword."))
 
      (selmer.parser/set-resource-path!
-       (util/file->url (io/as-file (cryogen-io/path "themes" theme))))
+      (util/file->url (io/as-file (cryogen-io/path "themes" theme))))
      (cryogen-io/set-public-path! (:public-dest config))
 
      (when-not inc-compile?
@@ -723,6 +718,6 @@
   ;; Build a single page (quicker than all)
   (compile-assets
     ;; Insert the prefix and suffix of the only file you _want_ to process
-    {:ignored-files [#"^(?!2019-12-12-nrepl-).*\.asc"]})
+   {:ignored-files [#"^(?!2019-12-12-nrepl-).*\.asc"]})
 
   nil)

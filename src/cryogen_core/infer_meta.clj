@@ -2,7 +2,7 @@
   (:require [clojure.java.io :refer [reader]]
             [clojure.pprint :refer [pprint]]
             [clojure.string :refer [capitalize join lower-case replace
-                                    starts-with? trim]]
+                                    split starts-with? trim]]
             [cryogen-core.console-message :refer [error info warn]]
             [cryogen-core.io :refer [get-resource]]
             [cryogen-core.markup :refer [exts render-fn]]
@@ -155,6 +155,28 @@
           nil))
    (:author config)))
 
+;; expecting {:tag :strong, :attrs nil, :content ("Tags:")}
+
+(defn tag-line?
+  "Is this element taken from a dom a line starting with a strongly-emphasised
+   string `Tag:`?"
+  [l]
+  (let [first-elt (first (:content l))]
+   (and (= (:tag l) :p)
+        (map? first-elt)
+        (= (:tag first-elt) :strong)
+        (string? (first (:content first-elt)))
+        (starts-with? (first (:content first-elt)) "Tags:"))))
+
+(defn infer-tags 
+  "Return a sequence of all tags found in this `dom`."
+  [dom]
+  (let [tags-p (filter
+                 tag-line?
+                 (walk-dom dom))
+        tags (when tags-p (join ", " (reduce concat (map #(rest (:content %)) tags-p))))]
+    (when tags (doall (set (map trim (split tags #",")))))))
+
 (defn infer-meta
   "Infer metadata related to this `page`, assumed to be the name of a file in 
    this `markup`, given this `config`."
@@ -166,8 +188,26 @@
                           :date (infer-date page config)
                           :description (infer-description page config dom)
                           :image (infer-image-data dom config)
+                          :inferred-meta true
+                          :tags (infer-tags dom)
                           :title (infer-title page config dom))]
+      (pprint dom)
       (info (format "Inferred metadata for document %s dated %s."
                     (:title metadata)
                     (:date metadata)))
       metadata)))
+
+(defn using-inferred-metadata 
+  "An implementation of the guts of `cryogen-core.compiler.page-content` for
+   pages without embedded metadata. Read this `page` in this `markup`, given 
+   this `config` and, it possible, return a map with the keys `:file-name`, 
+   `:page-meta`, `:content-dom` where the value of `:page-meta` is appropriate
+   meta-data inferred from the content of the page."
+  [page markup config]
+  (with-open [rdr (java.io.PushbackReader. (reader page))]
+    (let [content-dom (trimmed-html-snippet ((render-fn markup) rdr config))
+          page-meta (infer-meta page config markup)
+          file-name (infer-file-name page page-meta config)]
+      {:file-name   file-name
+       :page-meta   page-meta
+       :content-dom content-dom})))
