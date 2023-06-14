@@ -6,9 +6,9 @@
             [cryogen-core.console-message :refer [error info warn]]
             [cryogen-core.io :refer [get-resource]]
             [cryogen-core.markup :refer [exts render-fn]]
-            [cryogen-core.util :refer [parse-post-date re-pattern-from-exts
+            [cryogen-core.util :refer [enlive->plain-text parse-post-date
+                                       re-pattern-from-exts
                                        trimmed-html-snippet]]
-            [io.aviso.exception :as e]
             [mikera.image.core :refer [height load-image width]]
             [pantomime.mime :refer [mime-type-of]]
             [cc.journeyman.real-name.core :refer [get-real-name]])
@@ -39,7 +39,7 @@
          nil)))
 
 (defmacro walk-dom
-  "Walk this `dom` structure recursively."
+  "Return a flat sequence of all elements in this `dom` structure, recursively."
   [dom]
   `(tree-seq map? :content {:content ~dom}))
 
@@ -97,6 +97,50 @@
                           [".md"]  ;;(exts markup)
                           )".html"))))
 
+(defn main-title
+  "Return the content of the first `h1` element of this `dom`, if any."
+  [dom]
+  (first (filter #(= (:tag %) :h1) (walk-dom dom))))
+
+(defn main-title?
+  "`true` if this `elt` is the main title taken from this `dom`."
+  [elt dom]
+  (= elt (main-title dom)))
+
+;; expecting {:tag :strong, :attrs nil, :content ("Tags:")}
+
+(defn tag-line?
+  "`true` if this `elt` taken from a dom is a line starting with a strongly-emphasised
+   string `Tag:`?"
+  [elt]
+  (let [first-elt (first (:content elt))]
+    (and (= (:tag elt) :p)
+         (map? first-elt)
+         (= (:tag first-elt) :strong)
+         (string? (first (:content first-elt)))
+         (starts-with? (enlive->plain-text (list first-elt)) "Tags:"))))
+
+(defn- redundant?
+  "True if this `elt` is redundant within this `dom` once meta-data has been 
+   extracted."
+  [elt dom]
+  (or (main-title? elt dom)
+      (tag-line? elt)))
+
+;; OK, the right way to do this is obviously with clojure.walk, but as I'm too
+;; stupid to understand that I'll have to do it recursively. A dom, in this
+;; context, is a sequence of maps, each of which may have a :content key
+;; whose value is a sequence of strings and/or maps.
+(defn clean
+  "Return a dom like this `dom` but with those elements which (could) have 
+   been used to extract meta-data removed."
+  ([dom] (clean dom dom))
+  ([elt dom]
+  (cond
+    (map? elt) (when-not (redundant? elt dom) (assoc elt :content (clean (:content elt) dom)))
+    (coll? elt) (remove nil? (map #(clean % dom) elt))
+    :else elt)))
+
 (def infer-title
   "Infer the title of this page, ideally by extracting the first `H1` element from this
    `dom` (Document Object Model) of its content, given this `config`."
@@ -109,9 +153,9 @@
            (if (maybe-extract-date-from-filename page config)
              (subs page-name (count (:post-date-format config)))
              page-name)
-           h1 (first (filter #(= (:tag %) :h1) (walk-dom dom)))]
+           h1 (main-title dom)]
        (if h1
-         (join " " (:content h1))
+         (enlive->plain-text (:content h1))
          (capitalize
           (trim
            (replace
@@ -120,10 +164,9 @@
 
 (defn infer-description
   [^java.io.File page config dom]
-  (let [p (first (filter #(and (= (:tag %) :p)
-                               (every? string? (:content %)))
+  (let [p (first (filter #(= (:tag %) :p)
                          (walk-dom dom)))]
-    (if p (join " " (:content p))
+    (if p (enlive->plain-text (:content p))
         (infer-title page config dom))))
 
 (defn infer-date
@@ -155,25 +198,12 @@
           nil))
    (:author config)))
 
-;; expecting {:tag :strong, :attrs nil, :content ("Tags:")}
-
-(defn tag-line?
-  "Is this element taken from a dom a line starting with a strongly-emphasised
-   string `Tag:`?"
-  [l]
-  (let [first-elt (first (:content l))]
-   (and (= (:tag l) :p)
-        (map? first-elt)
-        (= (:tag first-elt) :strong)
-        (string? (first (:content first-elt)))
-        (starts-with? (first (:content first-elt)) "Tags:"))))
-
-(defn infer-tags 
+(defn infer-tags
   "Return a sequence of all tags found in this `dom`."
   [dom]
   (let [tags-p (filter
-                 tag-line?
-                 (walk-dom dom))
+                tag-line?
+                (walk-dom dom))
         tags (when tags-p (join ", " (reduce concat (map #(rest (:content %)) tags-p))))]
     (when tags (doall (set (map trim (split tags #",")))))))
 
@@ -197,7 +227,7 @@
                     (:date metadata)))
       metadata)))
 
-(defn using-inferred-metadata 
+(defn using-inferred-metadata
   "An implementation of the guts of `cryogen-core.compiler.page-content` for
    pages without embedded metadata. Read this `page` in this `markup`, given 
    this `config` and, it possible, return a map with the keys `:file-name`, 

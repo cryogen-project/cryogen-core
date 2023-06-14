@@ -5,8 +5,7 @@
             [clojure.string :as str]
             [clojure.zip :as zip]
             [cryogen-core.config :refer [resolve-config]]
-            [cryogen-core.infer-meta :refer [infer-file-name infer-meta
-                                             using-inferred-metadata]]
+            [cryogen-core.infer-meta :refer [clean using-inferred-metadata]]
             [cryogen-core.io :as cryogen-io]
             [cryogen-core.klipse :as klipse]
             [cryogen-core.markup :as m]
@@ -123,8 +122,6 @@
       {:file-name   file-name
        :page-meta   page-meta
        :content-dom content-dom})))
-
-
 
 (def page-content
   "Returns a map with the given page's file-name, metadata and content parsed from
@@ -316,7 +313,7 @@
 (defn content-dom->html [{dom :content-dom :as article}]
   (-> article
       (dissoc :content-dom)
-      (assoc :content (util/enlive->html-text dom))))
+      (assoc :content (util/enlive->html-text (clean dom)))))
 
 (defn htmlize-content [{:keys [postprocess-article-html-fn] :as params}]
   (letfn [(postprocess-article [article]
