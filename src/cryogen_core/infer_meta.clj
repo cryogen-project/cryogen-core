@@ -1,6 +1,5 @@
 (ns cryogen-core.infer-meta
   (:require [clojure.java.io :refer [reader]]
-            [clojure.pprint :refer [pprint]]
             [clojure.string :refer [capitalize join lower-case replace
                                     split starts-with? trim]]
             [cryogen-core.console-message :refer [error info warn]]
@@ -210,10 +209,8 @@
 (defn infer-meta
   "Infer metadata related to this `page`, assumed to be the name of a file in 
    this `markup`, given this `config`."
-  [^java.io.File page config markup]
-  (with-open [rdr (java.io.PushbackReader. (reader page))]
-    (let [dom (trimmed-html-snippet ((render-fn markup) rdr config))
-          metadata (assoc {}
+  [^java.io.File page config dom]
+    (let [metadata (assoc {}
                           :author (infer-author page config)
                           :date (infer-date page config)
                           :description (infer-description page config dom)
@@ -221,11 +218,10 @@
                           :inferred-meta true
                           :tags (infer-tags dom)
                           :title (infer-title page config dom))]
-      (pprint dom)
       (info (format "Inferred metadata for document %s dated %s."
                     (:title metadata)
                     (:date metadata)))
-      metadata)))
+      metadata))
 
 (defn using-inferred-metadata
   "An implementation of the guts of `cryogen-core.compiler.page-content` for
@@ -236,8 +232,8 @@
   [page markup config]
   (with-open [rdr (java.io.PushbackReader. (reader page))]
     (let [content-dom (trimmed-html-snippet ((render-fn markup) rdr config))
-          page-meta (infer-meta page config markup)
+          page-meta (infer-meta page config content-dom)
           file-name (infer-file-name page page-meta config)]
       {:file-name   file-name
        :page-meta   page-meta
-       :content-dom content-dom})))
+       :content-dom (clean content-dom)})))
