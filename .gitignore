@@ -13,3 +13,9 @@ pom.xml.asc
 /bin/
 /.classpath
 /.project
+/.clj-kondo/
+/.lsp/
+/.calva/
+src/cryogen_core/scratch.clj
+
+*.code-workspace
