@@ -1,7 +1,8 @@
 (ns cryogen-core.util-test
-  (:require [cryogen-core.util :refer :all]
-            [net.cgrand.enlive-html :as enlive]
-            [clojure.test :refer [deftest testing is are]]))
+  (:require [clojure.test :refer [deftest is]]
+            [cryogen-core.util :refer :all]
+            [net.cgrand.enlive-html :as enlive]) 
+  (:import [clojure.lang IExceptionInfo]))
 
 (deftest filter-html-elems-test
   (is (= (enlive/html [:div {:class "x"} [:div {:class "x"} "foo"]]
@@ -58,3 +59,18 @@
            {:tag :pre,
             :attrs nil,
             :content ({:tag :code, :attrs nil, :content ("\n            this is\n              some block formatted\n              code\n            ")})}))))
+
+(deftest parse-post-date-test
+  (let [expected (.parse (java.text.SimpleDateFormat. "yyyy-mm-dd") "2023-01-02")
+        actual (parse-post-date "foo/bar/2023-01-02-froboz.md" "yyyy-mm-dd")]
+    (is (= actual expected)))
+  (let [expected (.parse (java.text.SimpleDateFormat. "yyyy-mm-dd") "2023-01-02")
+        actual (parse-post-date "2023-01-02-froboz.md" "yyyy-mm-dd")]
+    (is (= actual expected)))
+  (let [formatter (java.text.SimpleDateFormat. "yyyy-mm-dd")
+        expected "2023-01-02"
+        actual (.format formatter (parse-post-date "foo/bar/2023-02-01-froboz.md" "yyyy-dd-mm"))]
+    (is (= actual expected)))
+  (is (thrown? Exception (parse-post-date "foo/bar/2023-Jan-02-froboz.md" "yyyy-mm-dd"))
+      "Format doesn't match")
+  (is (thrown? Exception (parse-post-date "foo/bar/froboz.md" "yyyy-mm-dd"))))
