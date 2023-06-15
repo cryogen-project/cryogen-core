@@ -76,8 +76,8 @@
            (throw (ex-info "Failed to parse date from filename"
                           {:date-fmt date-fmt
                            :file-name file-name}
-                          e)))))
-)
+                          e))))))
+
 (defn re-pattern-from-exts
   "Creates a properly quoted regex pattern for the given file extensions"
   ;; moved from cryogen-core.compiler
