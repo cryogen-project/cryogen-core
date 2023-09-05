@@ -31,7 +31,7 @@
 
 (defn only-changed-files-filter
   "Returns a page/post filter that only accepts these files:
-  
+
   - no filtering if `changeset` is empty (as it means this is the first build)
   - recompile the post/page that has changed since the last compilation
   - recompile everything if a template HTML file has changed
@@ -275,12 +275,16 @@
 
 (defn add-prev-next
   "Adds a :prev and :next key to the page/post data containing the metadata of the prev/next
-  post/page if it exists"
-  [pages]
+  post/page if it exists.
+  If a page does not have the sort key (:page-index or :date), do not add prev/next.
+  If the prev/next page does not have the sort key, do not add it."
+  [sort-by-key pages]
   (map (fn [[prev target next]]
-         (assoc target
-                :prev (if prev (dissoc prev :content-dom) nil)
-                :next (if next (dissoc next :content-dom) nil)))
+         (if (get target sort-by-key)
+           (assoc target
+                  :prev (if (and prev (get prev sort-by-key)) (dissoc prev :content-dom) nil)
+                  :next (if (and next (get next sort-by-key)) (dissoc next :content-dom) nil))
+           target))
        (partition 3 1 (flatten [nil pages nil]))))
 
 (defn group-pages
@@ -605,7 +609,7 @@
          {:keys [^String site-url blog-prefix rss-name recent-posts keep-files ignored-files previews? author-root-uri theme]
           :as   config} (resolve-config overrides)
          posts        (->> (read-posts config inc-compile-filter)
-                           (add-prev-next)
+                           (add-prev-next :date)
                            (map klipse/klipsify)
                            (map (partial add-description config))
                            (map #(update-article-fn % config))
@@ -623,7 +627,7 @@
                            (first))
          other-pages  (->> pages
                            (remove #{home-page})
-                           (add-prev-next))
+                           (add-prev-next :page-index))
          [navbar-pages
           sidebar-pages] (group-pages other-pages)
          params0      (merge
