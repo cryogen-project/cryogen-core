@@ -580,7 +580,7 @@
                               right before it is written to the disk. Example fn:
                               `(fn postprocess [article params] (update article :content selmer.parser/render params))`
      - `:update-article-fn` - a function (`article`, `config`) -> `article` to update a
-                            parsed page/post. Return nil to exclude it.
+                            parsed page/post via its `:content-dom`. Return nil to exclude the article.
      - `changeset` - as supplied by
                    [[cryogen-core.watcher/start-watcher-for-changes!]] to its callback
                    for incremental compilation, see [[only-changed-files-filter]]
