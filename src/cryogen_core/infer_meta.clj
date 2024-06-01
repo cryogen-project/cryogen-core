@@ -1,4 +1,5 @@
 (ns cryogen-core.infer-meta
+  (:refer-clojure :exclude [replace])
   (:require [clojure.java.io :refer [reader]]
             [clojure.string :refer [capitalize join lower-case replace
                                     split starts-with? trim]]

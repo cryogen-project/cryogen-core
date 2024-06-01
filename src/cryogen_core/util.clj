@@ -1,4 +1,5 @@
 (ns cryogen-core.util
+  (:refer-clojure :exclude [replace])
   (:require
    [clojure.string :refer [join last-index-of replace]]
     [clojure.walk :as walk]
