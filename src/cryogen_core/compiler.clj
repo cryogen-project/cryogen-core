@@ -528,7 +528,7 @@
   (cryogen-io/create-folder (cryogen-io/path "/" blog-prefix author-root-uri))
   ;; if the post author is empty defaults to config's :author
   (doseq [{:keys [author posts]} (group-for-author posts author)]
-    (let [uri (page-uri (str author ".html") :author-root-uri params)]
+    (let [uri (page-uri (str (url-encode author) ".html") :author-root-uri params)]
       (println "-->" (cyan uri))
       (write-html uri
                   params
