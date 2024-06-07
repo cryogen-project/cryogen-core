@@ -29,6 +29,14 @@
 
 (def content-root "content")
 
+(defn url-encode
+  "Url encode path element. Encodes spaces as %20 instead of +,
+  because some webservers pass + through to the file system"
+  [str]
+  (-> str
+      (URLEncoder/encode "UTF-8")
+      (str/replace "+" "%20")))
+
 (defn only-changed-files-filter
   "Returns a page/post filter that only accepts these files:
 
@@ -87,10 +95,10 @@
   [{:keys [page-root ignored-files]} mu]
   (find-entries page-root mu ignored-files))
 
-(defn page-uri
-  "Creates a URI from file name. `uri-type` is any of the uri types specified in config, e.g., `:post-root-uri`."
+(defn page-file-name
+  "Creates a full page file name from a file name. `uri-type` is any of the uri types specified in config, e.g., `:post-root-uri`."
   ([file-name params]
-   (page-uri file-name nil params))
+   (page-file-name file-name nil params))
   ([file-name uri-type {:keys [blog-prefix clean-urls] :as params}]
    (let [page-uri (get params uri-type)
          uri-end  (condp = clean-urls
@@ -98,6 +106,14 @@
                     :no-trailing-slash (string/replace file-name #"(index)?\.html" "")
                     :dirty file-name)]
      (cryogen-io/path "/" blog-prefix page-uri uri-end))))
+
+(defn page-uri
+  "Creates a URI from file name. `uri-type` is any of the uri types specified in config, e.g., `:post-root-uri`."
+  ([file-name params]
+   (page-uri file-name nil params))
+  ([file-name uri-type params]
+   (let [page-filename (page-file-name file-name uri-type params)]
+     (string/join "/" (map url-encode (string/split page-filename #"/" -1))))))
 
 (defn read-page-meta
   "Returns the clojure map from the top of a markdown page/post"
@@ -258,20 +274,12 @@
               {:author author
                :posts  posts}))))
 
-(defn url-encode
-  "Url encode path element. Encodes spaces as %20 instead of +,
-  because some webservers pass + through to the file system"
-  [str]
-  (-> str
-      (URLEncoder/encode "UTF-8")
-      (str/replace "+" "%20")))
-
 (defn tag-info
   "Returns a map containing the name and uri of the specified tag"
   [config tag]
   {:name (name tag)
-   :file-path (page-uri (str (name tag) ".html") :tag-root-uri config)
-   :uri  (page-uri (str (url-encode (name tag)) ".html") :tag-root-uri config)})
+   :file-path (page-file-name (str (name tag) ".html") :tag-root-uri config)
+   :uri  (page-uri (str (name tag) ".html") :tag-root-uri config)})
 
 (defn add-prev-next
   "Adds a :prev and :next key to the page/post data containing the metadata of the prev/next

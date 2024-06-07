@@ -146,3 +146,12 @@ and more content.
                         "/blog/tags-output/c#/" "c#"
                         "/blog/tags-output/why?/" "why?"
                         "/blog/tags-output/with a space/" "with a space"))))
+
+(deftest authors-are-url-encoded
+  (testing "URL encoded authors"
+    (let [config {:author-root-uri "author-output" :blog-prefix "/blog" :clean-urls :trailing-slash}]
+      (are [expected author] (= expected (page-uri author :author-root-uri config))
+        "/blog/author-output/Joe%20Smith/" "Joe Smith.html"
+        "/blog/author-output/Dr.%20Joe%20Smith/" "Dr. Joe Smith.html"
+        "/blog/author-output/Joe%20Smith%20Jr./" "Joe Smith Jr..html"
+        "/blog/author-output/John%20H.%20Doe%20Jr/" "John H. Doe Jr.html"))))
