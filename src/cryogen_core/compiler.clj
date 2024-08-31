@@ -29,9 +29,17 @@
 
 (def content-root "content")
 
+(defn url-encode
+  "Url encode path element. Encodes spaces as %20 instead of +,
+  because some webservers pass + through to the file system"
+  [str]
+  (-> str
+      (URLEncoder/encode "UTF-8")
+      (str/replace "+" "%20")))
+
 (defn only-changed-files-filter
   "Returns a page/post filter that only accepts these files:
-  
+
   - no filtering if `changeset` is empty (as it means this is the first build)
   - recompile the post/page that has changed since the last compilation
   - recompile everything if a template HTML file has changed
@@ -87,10 +95,10 @@
   [{:keys [page-root ignored-files]} mu]
   (find-entries page-root mu ignored-files))
 
-(defn page-uri
-  "Creates a URI from file name. `uri-type` is any of the uri types specified in config, e.g., `:post-root-uri`."
+(defn page-file-name
+  "Creates a full page file name from a file name. `uri-type` is any of the uri types specified in config, e.g., `:post-root-uri`."
   ([file-name params]
-   (page-uri file-name nil params))
+   (page-file-name file-name nil params))
   ([file-name uri-type {:keys [blog-prefix clean-urls] :as params}]
    (let [page-uri (get params uri-type)
          uri-end  (condp = clean-urls
@@ -98,6 +106,14 @@
                     :no-trailing-slash (string/replace file-name #"(index)?\.html" "")
                     :dirty file-name)]
      (cryogen-io/path "/" blog-prefix page-uri uri-end))))
+
+(defn page-uri
+  "Creates a URI from file name. `uri-type` is any of the uri types specified in config, e.g., `:post-root-uri`."
+  ([file-name params]
+   (page-uri file-name nil params))
+  ([file-name uri-type params]
+   (let [page-filename (page-file-name file-name uri-type params)]
+     (string/join "/" (map url-encode (string/split page-filename #"/" -1))))))
 
 (defn read-page-meta
   "Returns the clojure map from the top of a markdown page/post"
@@ -258,29 +274,25 @@
               {:author author
                :posts  posts}))))
 
-(defn url-encode
-  "Url encode path element. Encodes spaces as %20 instead of +,
-  because some webservers pass + through to the file system"
-  [str]
-  (-> str
-      (URLEncoder/encode "UTF-8")
-      (str/replace "+" "%20")))
-
 (defn tag-info
   "Returns a map containing the name and uri of the specified tag"
   [config tag]
   {:name (name tag)
-   :file-path (page-uri (str (name tag) ".html") :tag-root-uri config)
-   :uri  (page-uri (str (url-encode (name tag)) ".html") :tag-root-uri config)})
+   :file-path (page-file-name (str (name tag) ".html") :tag-root-uri config)
+   :uri  (page-uri (str (name tag) ".html") :tag-root-uri config)})
 
 (defn add-prev-next
   "Adds a :prev and :next key to the page/post data containing the metadata of the prev/next
-  post/page if it exists"
-  [pages]
+  post/page if it exists.
+  If a page does not have the sort key (:page-index or :date), do not add prev/next.
+  If the prev/next page does not have the sort key, do not add it."
+  [sort-by-key pages]
   (map (fn [[prev target next]]
-         (assoc target
-                :prev (if prev (dissoc prev :content-dom) nil)
-                :next (if next (dissoc next :content-dom) nil)))
+         (if (get target sort-by-key)
+           (assoc target
+                  :prev (if (and prev (get prev sort-by-key)) (dissoc prev :content-dom) nil)
+                  :next (if (and next (get next sort-by-key)) (dissoc next :content-dom) nil))
+           target))
        (partition 3 1 (flatten [nil pages nil]))))
 
 (defn group-pages
@@ -576,7 +588,7 @@
                               right before it is written to the disk. Example fn:
                               `(fn postprocess [article params] (update article :content selmer.parser/render params))`
      - `:update-article-fn` - a function (`article`, `config`) -> `article` to update a
-                            parsed page/post. Return nil to exclude it.
+                            parsed page/post via its `:content-dom`. Return nil to exclude the article.
      - `changeset` - as supplied by
                    [[cryogen-core.watcher/start-watcher-for-changes!]] to its callback
                    for incremental compilation, see [[only-changed-files-filter]]
@@ -604,12 +616,15 @@
                               :extend-params-fn :update-article-fn)
          {:keys [^String site-url blog-prefix rss-name recent-posts keep-files ignored-files previews? author-root-uri theme]
           :as   config} (resolve-config overrides)
-         posts        (->> (read-posts config inc-compile-filter)
-                           (add-prev-next)
-                           (map klipse/klipsify)
-                           (map (partial add-description config))
-                           (map #(update-article-fn % config))
-                           (remove nil?))
+         all-posts        (->> (read-posts config inc-compile-filter)
+                               (map klipse/klipsify)
+                               (map (partial add-description config))
+                               (map #(update-article-fn % config))
+                               (remove nil?))
+         grouped-posts (group-by #(get % :unlisted? false) all-posts)
+         unlisted-posts (get grouped-posts true [])
+         posts (get grouped-posts false [])
+         posts (add-prev-next :date posts)
          posts-by-tag (group-by-tags posts)
          posts        (tag-posts posts config)
          latest-posts (->> posts (take recent-posts) vec)
@@ -623,7 +638,7 @@
                            (first))
          other-pages  (->> pages
                            (remove #{home-page})
-                           (add-prev-next))
+                           (add-prev-next :page-index))
          [navbar-pages
           sidebar-pages] (group-pages other-pages)
          params0      (merge
@@ -670,6 +685,7 @@
      (copy-resources-from-markup-folders config)
      (compile-pages params other-pages)
      (compile-posts params posts)
+     (compile-posts params unlisted-posts)
      (compile-tags params posts-by-tag)
      (compile-tags-page params)
      (if previews?
