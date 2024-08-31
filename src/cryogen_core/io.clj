@@ -2,7 +2,7 @@
   (:require [clojure.java.io :as io]
             [clojure.string :as string]
             [me.raynes.fs :as fs]
-            [text-decoration.core :refer :all]))
+            [text-decoration.core :refer [cyan red yellow]]))
 
 (def ^:dynamic public "public")
 
@@ -94,7 +94,7 @@
       (println "\t" (cyan src) "-->" (cyan target))
       (cond
         (not (.exists (io/file src)))
-        (throw (IllegalArgumentException. (str "resource " src " not found")))
+        (println "\t\t" (yellow (str "resource " src " not found")))
         (.isDirectory (io/file src))
         (copy-dir src target ignored-files)
         :else
@@ -109,5 +109,7 @@
           {:resources (concat
                        ["css"
                         "js"
+                        "img"
+                        "fonts"
                         "html/404.html"]
                        (:theme-resources config))})))
