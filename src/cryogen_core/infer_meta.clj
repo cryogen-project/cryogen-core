@@ -11,8 +11,10 @@
                                        trimmed-html-snippet]]
             [mikera.image.core :refer [height load-image width]]
             [pantomime.mime :refer [mime-type-of]]
-            [cc.journeyman.real-name.core :refer [get-real-name]])
+            [cc.journeyman.real-name.core :refer [get-real-name]]
+            [clojure.pprint :refer [pprint]])
   (:import [java.util Date Locale]
+           [java.io File]
            [java.nio.file Files FileSystems LinkOption]
            [java.nio.file.attribute FileOwnerAttributeView]))
 
@@ -136,10 +138,10 @@
    been used to extract meta-data removed."
   ([dom] (clean dom dom))
   ([elt dom]
-  (cond
-    (map? elt) (when-not (redundant? elt dom) (assoc elt :content (clean (:content elt) dom)))
-    (coll? elt) (remove nil? (map #(clean % dom) elt))
-    :else elt)))
+   (cond
+     (map? elt) (when-not (redundant? elt dom) (assoc elt :content (clean (:content elt) dom)))
+     (coll? elt) (remove nil? (map #(clean % dom) elt))
+     :else elt)))
 
 (def infer-title
   "Infer the title of this page, ideally by extracting the first `H1` element from this
@@ -205,24 +207,47 @@
                 tag-line?
                 (walk-dom dom))
         tags (when tags-p (join ", " (reduce concat (map #(rest (:content %)) tags-p))))]
-    (when tags (doall (set (map trim (split tags #",")))))))
+    (when tags (doall (apply vector (set (map trim (split tags #","))))))))
 
 (defn infer-meta
   "Infer metadata related to this `page`, assumed to be the name of a file in 
    this `markup`, given this `config`."
   [^java.io.File page config dom]
-    (let [metadata (assoc {}
-                          :author (infer-author page config)
-                          :date (infer-date page config)
-                          :description (infer-description page config dom)
-                          :image (infer-image-data dom config)
-                          :inferred-meta true
-                          :tags (infer-tags dom)
-                          :title (infer-title page config dom))]
-      (info (format "Inferred metadata for document %s dated %s."
-                    (:title metadata)
-                    (:date metadata)))
-      metadata))
+  (let [metadata (assoc {}
+                        :author (infer-author page config)
+                        :date (infer-date page config)
+                        :description (infer-description page config dom)
+                        :image (infer-image-data dom config)
+                        :inferred-meta true
+                        :tags (infer-tags dom)
+                        :title (infer-title page config dom))]
+    (info (format "Inferred metadata for document %s dated %s."
+                  (:title metadata)
+                  (:date metadata)))
+    metadata))
+
+(defn file-extension 
+  "Return the extension, if any, of this `file-name`."
+  [file-name]
+  (second (re-find #"(\.[a-zA-Z0-9]+)$" file-name)))
+
+(defn- create-backup
+  [^File file]
+  (let [path (.getPath file)
+        backup-path (File. (str (replace path (file-extension path) ".bak")))]
+    (info (format "Backing up %s to %s" (.getPath file) (.getPath backup-path)))
+    (spit backup-path (slurp file))))
+
+(defn- write-back-inferred-meta
+  "Backup the file indicated by `page` to a new file with the same name but the
+   extension `.bak`, and replace it with a file having the same content but 
+   with this `meta-data` prefixed."
+  [^File page meta-data config]
+  (let [content (slurp page)
+        pretty-meta (with-out-str (pprint meta-data))]
+    (warn (format "%s: Prepending meta-data:\n %s" (.getName page) pretty-meta)) 
+    (create-backup page)
+    (spit page (str pretty-meta "\n\n" content))))
 
 (defn using-inferred-metadata
   "An implementation of the guts of `cryogen-core.compiler.page-content` for
@@ -235,6 +260,7 @@
     (let [content-dom (trimmed-html-snippet ((render-fn markup) rdr config))
           page-meta (infer-meta page config content-dom)
           file-name (infer-file-name page page-meta config)]
+      (when (:write-back-inferred-meta? config) (write-back-inferred-meta page page-meta config))
       {:file-name   file-name
        :page-meta   page-meta
        :content-dom (clean content-dom)})))
