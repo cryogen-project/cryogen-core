@@ -74,10 +74,14 @@
         li (toc-entry anchor text)]
     (if (seq children)
       ;; Create hiccup sequence of :ol/:ul tag and sequence of :li tags
-      (list li [list-type
-                (when outer-list?
-                  {:class toc-class})
-                (map #(build-toc % list-type toc-class {:outer-list? false}) children)])
+      (let [inner [list-type
+                   (when outer-list?
+                     {:class toc-class})
+                   (map #(build-toc % list-type toc-class {:outer-list? false}) children)]]
+        (list li
+              (if outer-list?
+                inner
+                [:li inner])))
       li))) ; Or just return the naked :li tag
 
 (defn generate-toc*
