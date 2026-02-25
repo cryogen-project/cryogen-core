@@ -78,10 +78,9 @@
                    (when outer-list?
                      {:class toc-class})
                    (map #(build-toc % list-type toc-class {:outer-list? false}) children)]]
-        (list li
-              (if outer-list?
-                inner
-                [:li inner])))
+        (if outer-list?
+          (list li inner)
+          (conj li inner)))
       li))) ; Or just return the naked :li tag
 
 (defn generate-toc*
