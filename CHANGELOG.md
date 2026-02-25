@@ -5,7 +5,10 @@ file. This change log follows the conventions of
 [keepachangelog.com](http://keepachangelog.com/), with the addition of
 sections for `Highlights`, `Breaking` and `Changes since x.y.z`.
 
-## [Unreleased]
+## [0.4.8]
+
+### Fixes
+- [fixtoc: nested lists should be within li](https://github.com/cryogen-project/cryogen-core/pull/176)
 
 ## [0.4.0] - 2020-12-05
 
