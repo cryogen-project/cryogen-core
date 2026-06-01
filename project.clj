@@ -9,7 +9,7 @@
                            [clj-rss "0.4.0"]
                            [clj-text-decoration "0.0.3"]
                            ;; used for mime type inference
-                           [com.novemberain/pantomime "3.1.0" :exclusions [selmer]]
+                           [com.novemberain/pantomime "3.1.0"]
                            [enlive "1.1.6"]
                            [hiccup "1.0.5"]
                            [io.aviso/pretty "1.4.4"]
