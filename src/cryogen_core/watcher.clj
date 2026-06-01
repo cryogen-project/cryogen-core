@@ -1,9 +1,10 @@
 (ns cryogen-core.watcher
   (:require [clojure.java.io :as io]
             [clojure.set :as set]
-            [hawk.core :as hawk]
             [pandect.algo.md5 :as md5]
-            [cryogen-core.io :as cryogen-io]))
+            [cryogen-core.io :as cryogen-io])
+  (:import [java.nio.file FileSystems Files LinkOption Path StandardWatchEventKinds WatchEvent WatchKey WatchService]
+           [java.io File]))
 
 (defn get-assets [path ignored-files]
   (->> path
@@ -28,15 +29,18 @@
       (callback changeset)
       (reset! sums new-sums))))
 
-(defn watch-with-fallback!
-  "Wraps hawk/watch! to swap in a polling implementation if any of the native
-   OS file events interfaces fail."
-  [opts & groups]
-  (try
-    (apply hawk/watch! opts groups)
-    (catch Error e
-      (prn e "WARN - no native fs events; falling back to polling filesystem")
-      (apply hawk/watch! (assoc opts :watcher :polling) groups))))
+(defn- register-recursive!
+  "Recursively register `dir` and all its subdirectories with the WatchService."
+  [^WatchService ws ^Path dir]
+  (when (.isDirectory (.toFile dir))
+    (.register dir ws
+               (into-array java.nio.file.WatchEvent$Kind
+                           [StandardWatchEventKinds/ENTRY_CREATE
+                            StandardWatchEventKinds/ENTRY_MODIFY
+                            StandardWatchEventKinds/ENTRY_DELETE]))
+    (doseq [^File child (.listFiles (.toFile dir))]
+      (when (.isDirectory child)
+        (register-recursive! ws (.toPath child))))))
 
 (defn start-watcher-for-changes!
   "Start watching files under `root` for changes, excluding `ignored-files`
@@ -47,10 +51,29 @@
     passed before the changeset"
   [root ignored-files callback & callback-args]
   (let [sums (atom (checksums root ignored-files))
-        handler (fn [ctx e]
-                  (watch-assets sums root ignored-files #(apply callback (concat callback-args %&))))]
-    (watch-with-fallback! {} [{:paths   [root]
-                               :handler handler}])))
+        ws (.newWatchService (FileSystems/getDefault))
+        root-path (.toPath (io/file root))
+        handler (fn [_ _]
+                  (watch-assets sums root ignored-files #(apply callback (concat callback-args %&))))
+        thread (Thread.
+                (fn []
+                  (try
+                    (loop []
+                      (let [key (.take ws)]
+                        (doseq [^WatchEvent event (.pollEvents key)]
+                          (when (= StandardWatchEventKinds/ENTRY_CREATE (.kind event))
+                            (let [child (.resolve root-path (.context event))]
+                              (when (.isDirectory (.toFile child))
+                                (register-recursive! ws child)))))
+                        (handler nil nil)
+                        (.reset key)
+                        (recur)))
+                    (catch InterruptedException _)
+                    (catch java.nio.file.ClosedWatchServiceException _))))]
+    (.setDaemon thread true)
+    (register-recursive! ws root-path)
+    (.start thread)
+    ws))
 
 (defn start-watcher!
   "Same as [[start-watcher-for-changes!]] but expects 0-argument action"
