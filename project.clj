@@ -23,6 +23,7 @@
             [selmer "1.13.1"]]
              :managed-dependencies [[org.bouncycastle/bcpkix-jdk18on "1.81.1"]
                                     [org.bouncycastle/bcutil-jdk18on "1.81.1"]
-                                    [org.bouncycastle/bcprov-jdk18on "1.81.1"]]
+                                    [org.bouncycastle/bcprov-jdk18on "1.81.1"]
+                                    [commons-io/commons-io "2.18.0"]]
              :deploy-repositories [["snapshots" :clojars]
                                   ["releases" :clojars]])
