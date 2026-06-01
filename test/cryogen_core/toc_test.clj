@@ -55,10 +55,11 @@
       "No outer header should be less indented than the first header tag.")
 
   (is (util/hic= [:ul.toc
-                  [:li [:a {:href "#starting_low"} "Starting Low"]]
-                  [:li [:ul
-                        [:li [:a {:href "#jumping_in"} "Jumping Right In"]]
-                        [:li [:a {:href "#pulling_back"} "But then pull back"]]]]
+                  [:li
+                   [:a {:href "#starting_low"} "Starting Low"]
+                   [:ul
+                    [:li [:a {:href "#jumping_in"} "Jumping Right In"]]
+                    [:li [:a {:href "#pulling_back"} "But then pull back"]]]]
                   [:li [:a {:href "#to_the_top"} "To the top"]]]
                  (-> [:div
                       [:h2 {:id "starting_low"}
