@@ -20,6 +20,9 @@
                            [org.clojars.simon_brooke/real-name "1.0.2"]
                            [pandect "1.0.2"]
                            [prismatic/schema "1.4.1"]
-                           [selmer "1.13.1"]]
-            :deploy-repositories [["snapshots" :clojars]
+            [selmer "1.13.1"]]
+             :managed-dependencies [[org.bouncycastle/bcpkix-jdk18on "1.81.1"]
+                                    [org.bouncycastle/bcutil-jdk18on "1.81.1"]
+                                    [org.bouncycastle/bcprov-jdk18on "1.81.1"]]
+             :deploy-repositories [["snapshots" :clojars]
                                   ["releases" :clojars]])
