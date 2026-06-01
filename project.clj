@@ -11,7 +11,6 @@
                            ;; used for mime type inference
                            [com.novemberain/pantomime "2.11.0" :exclusions [selmer]]
                            [enlive "1.1.6"]
-                           [hawk "0.2.11"]
                            [hiccup "1.0.5"]
                            [org.clj-commons/pretty "2.6.0"]
                            [me.raynes/fs "1.4.6"]
