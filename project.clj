@@ -1,4 +1,4 @@
-(defproject cryogen-core "0.5.0"
+(defproject cryogen-core "0.5.1"
             :description "Cryogen's compiler"
             :url "https://github.com/cryogen-project/cryogen-core"
             :license {:name "Eclipse Public License"
@@ -20,7 +20,7 @@
                            [org.clojars.simon_brooke/real-name "1.0.2"]
                            [pandect "1.0.2"]
                            [prismatic/schema "1.4.1"]
-            [selmer "1.13.1"]]
+                           [selmer "1.13.1"]]
              :managed-dependencies [[org.bouncycastle/bcpkix-jdk18on "1.81.1"]
                                     [org.bouncycastle/bcutil-jdk18on "1.81.1"]
                                     [org.bouncycastle/bcprov-jdk18on "1.81.1"]
