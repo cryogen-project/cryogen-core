@@ -3,8 +3,15 @@
             [text-decoration.core :refer :all]
             [cryogen-core.io :as cryogen-io]
             [cryogen-core.util :as cryogen-util])
-  (:import java.util.Date))
+  (:import [java.util Date]
+           [java.time Instant ZoneOffset]
+           [java.time.format DateTimeFormatter]))
 
+
+(defn- date->instant
+  "Convert a java.util.Date to java.time.Instant for clj-rss 0.4.0+ compatibility."
+  [^Date d]
+  (.toInstant d))
 
 (defn posts-to-items [^String site-url posts]
   (map
@@ -15,7 +22,7 @@
                 :title       title
                 :description description
                 :author      author
-                :pubDate     date}
+                :pubDate     (some-> date date->instant)}
                (if enclosure {:enclosure   enclosure}))))
     posts))
 
@@ -26,7 +33,7 @@
              {:title         (:site-title config)
               :link          (:site-url config)
               :description   (:description config)
-              :lastBuildDate (Date.)})
+              :lastBuildDate (date->instant (Date.))})
     (posts-to-items (:site-url config) posts)))
 
 (defn make-filtered-channels [{:keys [rss-filters blog-prefix] :as config} posts-by-tag]
