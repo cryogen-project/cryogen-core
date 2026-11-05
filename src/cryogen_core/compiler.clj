@@ -241,7 +241,7 @@
   "Adds the uri and title of a post to the list of posts under each of its tags"
   [tags post]
   (reduce (fn [tags tag]
-            (update-in tags [tag] (fnil conj []) (select-keys post [:uri :title :content-dom :date :enclosure :description])))
+            (update-in tags [tag] (fnil conj []) post))
           tags
           (:tags post)))
 
@@ -254,12 +254,11 @@
   "Groups the posts by month and year for archive sorting"
   [posts]
   (->> posts
-       (map #(select-keys % [:title :uri :date :formatted-archive-group :parsed-archive-group]))
        (group-by :formatted-archive-group)
        (map (fn [[group posts]]
               {:group        group
                :parsed-group (:parsed-archive-group (get posts 0))
-               :posts        (map #(select-keys % [:title :uri :date]) posts)}))
+               :posts        posts}))
        (sort-by :parsed-group)
        reverse))
 
@@ -267,7 +266,6 @@
   "Groups the posts by author. If no post author if found defaults `default-author`."
   [posts default-author]
   (->> posts
-       (map #(select-keys % [:title :uri :date :formatted-archive-group :parsed-archive-group :author]))
        (map #(update % :author (fn [author] (or author default-author))))
        (group-by :author)
        (map (fn [[author posts]]
